@@ -8,6 +8,10 @@ import {
   Bookmark,
   Lightbulb,
   ArrowRight,
+  Plus,
+  Sparkles,
+  CalendarDays,
+  Timer,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { Task, Project, Note, Resource, BrainDump } from "../../types/database";
@@ -17,6 +21,8 @@ interface GlobalSearchModalProps {
   onClose: () => void;
   onSelectTask?: (task: Task) => void;
   onNavigateTab?: (tab: any, itemId?: string) => void;
+  onCreateTask?: () => void;
+  onPlanDay?: () => void;
 }
 
 export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
@@ -24,6 +30,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onClose,
   onSelectTask,
   onNavigateTab,
+  onCreateTask,
+  onPlanDay,
 }) => {
   const resultsRef = useRef<HTMLDivElement>(null);
   const moveResult = (e: React.KeyboardEvent) => {
@@ -143,6 +151,63 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           ref={resultsRef}
           className="max-h-96 overflow-y-auto p-3 space-y-4"
         >
+          {!q && (
+            <div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1.5 block">
+                Quick actions
+              </span>
+              <div className="command-actions">
+                <button
+                  onClick={() => {
+                    onCreateTask?.();
+                    onClose();
+                  }}
+                >
+                  <Plus size={15} />
+                  <span>
+                    <strong>Create task</strong>
+                    <small>Capture something quickly</small>
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    onPlanDay?.();
+                    onClose();
+                  }}
+                >
+                  <Sparkles size={15} />
+                  <span>
+                    <strong>Plan my day</strong>
+                    <small>Build focus blocks from real tasks</small>
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    onNavigateTab?.("calendar");
+                    onClose();
+                  }}
+                >
+                  <CalendarDays size={15} />
+                  <span>
+                    <strong>Open calendar</strong>
+                    <small>See deadlines and routines</small>
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    onNavigateTab?.("focus-insights");
+                    onClose();
+                  }}
+                >
+                  <Timer size={15} />
+                  <span>
+                    <strong>Focus insights</strong>
+                    <small>Review your focused time</small>
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
           {totalResults === 0 && q && (
             <div className="text-center py-8 text-xs text-muted-foreground">
               No results found for "{query}".

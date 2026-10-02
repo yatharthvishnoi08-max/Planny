@@ -10,6 +10,7 @@ import {
   Resource,
   BrainDump,
   FocusSession,
+  DailyPlan,
 } from "../types/database";
 import { localDate, routineOccursOn } from "./dates";
 import { reconcileNotifications } from "./notifications";
@@ -213,6 +214,7 @@ type Tables = {
   resources: Resource;
   brain_dumps: BrainDump;
   focus_sessions: FocusSession;
+  daily_plans: DailyPlan;
 };
 type Data = { [K in keyof Tables]: Tables[K][] };
 type Mutation = {
@@ -230,6 +232,7 @@ const emptyData = (): Data => ({
   resources: [],
   brain_dumps: [],
   focus_sessions: [],
+  daily_plans: [],
 });
 const uuid = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -720,6 +723,12 @@ export class SyncEngine {
   }
   logFocusSession(row: FocusSession) {
     return this.save("focus_sessions", row);
+  }
+  getDailyPlans() {
+    return [...this.data.daily_plans];
+  }
+  saveDailyPlan(row: DailyPlan) {
+    return this.save("daily_plans", row);
   }
 }
 export const syncEngine = new SyncEngine();

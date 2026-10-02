@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
+import { isPending, localDate } from "../../lib/dates";
 
 interface ProjectsViewProps {
   projects: Project[];
@@ -111,6 +112,18 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           const pDone = pTasks.filter((t) => t.status === "completed").length;
           const pPct =
             pTasks.length > 0 ? Math.round((pDone / pTasks.length) * 100) : 0;
+          const pOverdue = pTasks.filter(
+            (task) =>
+              isPending(task) &&
+              task.deadline &&
+              localDate(new Date(task.deadline)) < localDate(),
+          ).length;
+          const pUpcoming = pTasks.filter(
+            (task) =>
+              isPending(task) &&
+              task.deadline &&
+              localDate(new Date(task.deadline)) >= localDate(),
+          ).length;
 
           return (
             <div
@@ -156,6 +169,12 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   {pDone} of {pTasks.length} tasks
                 </span>
                 <span>{pTasks.length - pDone} remaining</span>
+              </div>
+              <div className="project-card-signals">
+                <span>{pUpcoming} upcoming</span>
+                {pOverdue > 0 && (
+                  <span className="overdue">{pOverdue} overdue</span>
+                )}
               </div>
             </div>
           );

@@ -1,4 +1,4 @@
-import { localDate } from "./lib/dates";
+import { isPending, isTodayTask, localDate } from "./lib/dates";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 import { syncEngine, SyncState } from "./lib/sync";
@@ -11,6 +11,7 @@ import {
   Resource,
   BrainDump,
   FocusSession,
+  DailyPlan,
 } from "./types/database";
 import { AppLayout, NavigationTab } from "./components/layout/AppLayout";
 import { TodayView } from "./components/views/TodayView";
@@ -58,6 +59,9 @@ export const App: React.FC = () => {
   const [focusSessions, setFocusSessions] = useState<FocusSession[]>(
     syncEngine.getFocusSessions(),
   );
+  const [dailyPlans, setDailyPlans] = useState<DailyPlan[]>(
+    syncEngine.getDailyPlans(),
+  );
 
   // Modals & Panels
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -67,6 +71,7 @@ export const App: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isBriefingOpen, setIsBriefingOpen] = useState(false);
   const [isDayReviewOpen, setIsDayReviewOpen] = useState(false);
+  const [planDayRequest, setPlanDayRequest] = useState(0);
 
   // Subscribe to Sync Engine changes
   useEffect(() => {
@@ -80,6 +85,7 @@ export const App: React.FC = () => {
       setResources(syncEngine.getResources());
       setBrainDumps(syncEngine.getBrainDumps());
       setFocusSessions(syncEngine.getFocusSessions());
+      setDailyPlans(syncEngine.getDailyPlans());
     });
     return unsubscribe;
   }, []);
@@ -161,7 +167,7 @@ export const App: React.FC = () => {
     syncEngine.saveTask({
       id: taskId,
       user_id: user?.id || "user-default",
-      project_id: taskProjectId,
+      project_id: parsed.project_id || taskProjectId,
       title: parsed.title,
       description: parsed.description,
       priority: parsed.priority,
@@ -241,15 +247,19 @@ export const App: React.FC = () => {
           tasks={tasks}
           routines={routines}
           routineInstances={routineInstances}
+          focusSessions={focusSessions}
+          dailyPlans={dailyPlans}
+          endOfDay={profile?.end_of_day}
           onSelectTask={setSelectedTask}
           onStartFocus={setFocusTask}
           onOpenAITaskModal={() => {
             setTaskProjectId(null);
             setIsAITaskModalOpen(true);
           }}
-          onOpenBriefing={() => setIsBriefingOpen(true)}
           onOpenDayReview={() => setIsDayReviewOpen(true)}
-          onPlan={() => setCurrentTab("upcoming")}
+          onOpenAssistant={() => setCurrentTab("ai-assistant")}
+          onOpenRoutines={() => setCurrentTab("routines")}
+          planRequest={planDayRequest}
         />
       )}
 
@@ -320,11 +330,22 @@ export const App: React.FC = () => {
         isOpen={isAITaskModalOpen}
         onClose={() => setIsAITaskModalOpen(false)}
         onConfirmTask={handleCreateAITask}
+        projects={projects}
       />
 
       {/* Full-Screen Distraction-Free Focus Mode */}
       {focusTask && (
-        <FocusMode task={focusTask} onClose={() => setFocusTask(null)} />
+        <FocusMode
+          key={focusTask.id}
+          task={focusTask}
+          onClose={() => setFocusTask(null)}
+          todayTasks={tasks.filter((task) => isTodayTask(task))}
+          nextTask={tasks.find(
+            (task) =>
+              task.id !== focusTask.id && isPending(task) && isTodayTask(task),
+          )}
+          onStartNext={setFocusTask}
+        />
       )}
 
       {/* Daily Briefing Modal */}
@@ -340,6 +361,8 @@ export const App: React.FC = () => {
         isOpen={isDayReviewOpen}
         onClose={() => setIsDayReviewOpen(false)}
         tasks={tasks}
+        focusSessions={focusSessions}
+        dailyPlans={dailyPlans}
       />
 
       {/* Global Search Command Palette (Cmd + K) */}
@@ -347,6 +370,11 @@ export const App: React.FC = () => {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onSelectTask={setSelectedTask}
+        onCreateTask={() => setIsAITaskModalOpen(true)}
+        onPlanDay={() => {
+          setCurrentTab("today");
+          setPlanDayRequest((value) => value + 1);
+        }}
         onNavigateTab={(tab, id) => {
           setSearchTarget(id);
           setCurrentTab(tab);

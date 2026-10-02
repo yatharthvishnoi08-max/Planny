@@ -1,64 +1,127 @@
-import confetti from "canvas-confetti";
-import { triggerHaptic } from "../../lib/platform";
-import React, { useState } from "react";
-import { Task, Routine, RoutineInstance, Priority } from "../../types/database";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import type {
+  DailyPlan,
+  FocusSession,
+  Priority,
+  Routine,
+  RoutineInstance,
+  Task,
+} from "../../types/database";
 import {
-  Check,
-  Plus,
-  Play,
-  Sun,
+  ArrowRight,
   ArrowUpRight,
-  Clock,
+  CalendarClock,
+  Check,
   CheckCircle2,
   MoreHorizontal,
-  Zap,
+  Play,
+  Plus,
+  Repeat2,
+  Sparkles,
+  WandSparkles,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
 import {
-  localDate,
+  dateAtTime,
   isPending,
   isTodayTask,
+  localDate,
   routineOccursOn,
 } from "../../lib/dates";
+import {
+  availableMinutesToday,
+  nextTaskReason,
+  recommendNextTask,
+} from "../../lib/dayPlanner";
+import { focusSecondsForDay, formatFocusTime } from "../../lib/focusAnalytics";
+import { PlanMyDayModal, readPlanBlocks } from "../daily/PlanMyDayModal";
+import { triggerHaptic } from "../../lib/platform";
+
 interface TodayViewProps {
   tasks: Task[];
   routines: Routine[];
   routineInstances: RoutineInstance[];
-  onSelectTask: (t: Task) => void;
-  onStartFocus: (t: Task) => void;
+  focusSessions: FocusSession[];
+  dailyPlans: DailyPlan[];
+  endOfDay?: string;
+  onSelectTask: (task: Task) => void;
+  onStartFocus: (task: Task) => void;
   onOpenAITaskModal: () => void;
-  onOpenBriefing: () => void;
   onOpenDayReview: () => void;
-  onPlan: () => void;
+  onOpenAssistant: () => void;
+  onOpenRoutines: () => void;
+  planRequest?: number;
 }
 const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+const greeting = () =>
+  new Date().getHours() < 12
+    ? "Good morning"
+    : new Date().getHours() < 18
+      ? "Good afternoon"
+      : "Good evening";
+
 export function TodayView({
   tasks,
   routines,
   routineInstances,
+  focusSessions,
+  dailyPlans,
+  endOfDay = "21:00",
   onSelectTask,
   onStartFocus,
   onOpenAITaskModal,
-  onOpenBriefing,
   onOpenDayReview,
+  onOpenAssistant,
+  onOpenRoutines,
+  planRequest = 0,
 }: TodayViewProps) {
   const [filter, setFilter] = useState<"all" | "open" | "completed">("all");
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
-  const pending = tasks
-    .filter((t) => isPending(t) && isTodayTask(t))
-    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  const [showAll, setShowAll] = useState(false);
+  const [rescheduling, setRescheduling] = useState<string | null>(null);
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  useEffect(() => {
+    if (planRequest) setPlannerOpen(true);
+  }, [planRequest]);
+  const today = localDate();
+  const pending = useMemo(
+    () =>
+      tasks
+        .filter((task) => isPending(task) && isTodayTask(task))
+        .sort((a, b) => {
+          const deadline =
+            (a.deadline ? new Date(a.deadline).getTime() : Infinity) -
+            (b.deadline ? new Date(b.deadline).getTime() : Infinity);
+          return (
+            priorityOrder[a.priority] - priorityOrder[b.priority] || deadline
+          );
+        }),
+    [tasks],
+  );
   const completed = tasks.filter(
-    (t) => t.status === "completed" && isTodayTask(t),
+    (task) => task.status === "completed" && isTodayTask(task),
   );
   const daily = routines
-    .filter((r) => routineOccursOn(r))
+    .filter((routine) => routineOccursOn(routine))
     .sort((a, b) => a.time_of_day.localeCompare(b.time_of_day));
-  const minutes = pending.reduce(
-    (sum, t) => sum + t.estimated_duration_minutes,
+  const totalTasks = pending.length + completed.length;
+  const completion = totalTasks
+    ? Math.round((completed.length / totalTasks) * 100)
+    : 0;
+  const remainingMinutes = pending.reduce(
+    (sum, task) => sum + task.estimated_duration_minutes,
     0,
   );
+  const availableMinutes = availableMinutesToday(endOfDay);
+  const focusedToday = focusSecondsForDay(focusSessions, new Date());
+  const nextUp = recommendNextTask(tasks, focusSessions, availableMinutes);
+  const currentPlan = dailyPlans.find((plan) => plan.date === today);
+  const planBlocks = readPlanBlocks(currentPlan);
+  const plannedTasks = planBlocks.filter((block) => block.type === "task");
+
   const add = (event: React.FormEvent) => {
     event.preventDefault();
     if (!title.trim()) return;
@@ -71,7 +134,7 @@ export function TodayView({
       description: null,
       priority,
       status: "todo",
-      start_date: localDate(),
+      start_date: today,
       deadline: null,
       estimated_duration_minutes: 30,
       recurrence_rule: null,
@@ -84,240 +147,360 @@ export function TodayView({
     });
     setTitle("");
   };
+  const moveTask = (task: Task, target: "today" | "tomorrow" | "smart") => {
+    const date = new Date();
+    if (
+      target === "tomorrow" ||
+      (target === "smart" && remainingMinutes > availableMinutes)
+    )
+      date.setDate(date.getDate() + 1);
+    const targetDate = localDate(date);
+    const deadlineTime = task.deadline
+      ? new Date(task.deadline).toTimeString().slice(0, 5)
+      : "18:00";
+    syncEngine.saveTask({
+      ...task,
+      start_date: targetDate,
+      deadline: task.deadline ? dateAtTime(targetDate, deadlineTime) : null,
+    });
+    setRescheduling(null);
+  };
   const toggle = (task: Task) => {
     syncEngine.toggleTaskCompletion(task.id);
     triggerHaptic("success");
-    if (
-      task.status !== "completed" &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      try {
-        confetti({ particleCount: 24, spread: 35, origin: { y: 0.7 } });
-      } catch {}
-    }
   };
-  const taskRow = (task: Task, done = false) => (
-    <div className={`task-row ${done ? "is-done" : ""}`} key={task.id}>
+  const dueText = (task: Task) => {
+    if (!task.deadline)
+      return task.start_date === today ? "Today" : "No deadline";
+    const due = new Date(task.deadline);
+    const day = localDate(due);
+    const label =
+      day < today
+        ? "Overdue"
+        : day === today
+          ? "Today"
+          : due.toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            });
+    return `${label} · ${due.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+  };
+  const taskCard = (task: Task, done = false) => (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: 16 }}
+      transition={{ duration: 0.22 }}
+      className={`smart-task-card ${done ? "is-done" : ""}`}
+      key={task.id}
+    >
       <button
-        className="task-check"
+        className="smart-task-check"
         aria-label={`${done ? "Reopen" : "Complete"} ${task.title}`}
         onClick={() => toggle(task)}
       >
-        {done && <Check size={12} />}
+        <Check size={13} />
       </button>
-      <button className="task-main" onClick={() => onSelectTask(task)}>
-        <span className="task-title">{task.title}</span>
-        {(task.project || task.subtasks?.length) && (
-          <span className="task-subtitle">
-            {task.project?.title}
-            {task.project && task.subtasks?.length ? " · " : ""}
-            {task.subtasks?.length
-              ? `${task.subtasks.filter((s) => s.is_completed).length}/${task.subtasks.length} subtasks`
-              : ""}
-          </span>
-        )}
-      </button>
-      {!done && (
+      <button className="smart-task-main" onClick={() => onSelectTask(task)}>
+        <strong>{task.title}</strong>
         <span
-          className={`task-priority ${task.priority}`}
-          title={`${task.priority} priority`}
+          className={
+            task.deadline && new Date(task.deadline) < new Date() && !done
+              ? "overdue"
+              : ""
+          }
         >
-          <span />
-          {task.priority === "urgent"
-            ? "Urgent"
-            : task.priority === "high"
-              ? "High"
-              : ""}
+          {dueText(task)}
         </span>
-      )}
-      <span className="task-duration">
-        {formatMinutes(task.estimated_duration_minutes)}
-      </span>
+        <small>
+          {formatMinutes(task.estimated_duration_minutes)}
+          <i>·</i>
+          <b className={`priority-${task.priority}`}>
+            {task.priority === "medium" ? "Normal" : task.priority}
+          </b>
+          {task.project && (
+            <>
+              <i>·</i>
+              {task.project.title}
+            </>
+          )}
+        </small>
+      </button>
       {!done && (
-        <button
-          className="task-focus"
-          aria-label={`Focus on ${task.title}`}
-          onClick={() => onStartFocus(task)}
-        >
-          <Play size={14} />
-        </button>
+        <div className="smart-task-actions">
+          <button
+            onClick={() => toggle(task)}
+            aria-label={`Complete ${task.title}`}
+          >
+            <Check size={14} />
+            <span>Done</span>
+          </button>
+          <button
+            onClick={() => onStartFocus(task)}
+            aria-label={`Focus on ${task.title}`}
+          >
+            <Play size={14} />
+            <span>Start</span>
+          </button>
+          <button
+            onClick={() =>
+              setRescheduling(rescheduling === task.id ? null : task.id)
+            }
+            aria-label={`Reschedule ${task.title}`}
+          >
+            <CalendarClock size={14} />
+            <span>Move</span>
+          </button>
+          <button
+            onClick={onOpenAssistant}
+            aria-label={`Ask Planny about ${task.title}`}
+          >
+            <WandSparkles size={14} />
+            <span>AI</span>
+          </button>
+          <button
+            onClick={() => onSelectTask(task)}
+            aria-label={`More actions for ${task.title}`}
+          >
+            <MoreHorizontal size={15} />
+          </button>
+        </div>
       )}
-    </div>
+      {rescheduling === task.id && (
+        <div className="reschedule-popover">
+          <span>Move to</span>
+          <button onClick={() => moveTask(task, "today")}>Today</button>
+          <button onClick={() => moveTask(task, "tomorrow")}>Tomorrow</button>
+          <button onClick={() => moveTask(task, "smart")}>
+            <Sparkles size={12} /> Let Planny decide
+          </button>
+        </div>
+      )}
+    </motion.div>
   );
+  const visiblePending = showAll ? pending : pending.slice(0, 8);
   return (
-    <div className="today-page">
-      <header className="page-heading">
+    <div className="today-page smart-today-page">
+      <header className="smart-today-header">
         <div>
-          <span className="page-eyebrow">GOOD PLANS. REAL PROGRESS.</span>
+          <span className="page-eyebrow">{greeting()}</span>
           <h1>
             Today<span className="accent-period">.</span>
           </h1>
           <p>
-            {new Date().toLocaleDateString("en-US", {
+            {new Date().toLocaleDateString(undefined, {
               weekday: "long",
               month: "long",
               day: "numeric",
             })}
           </p>
         </div>
-        <button className="primary-button" onClick={onOpenAITaskModal}>
-          <Plus size={16} />
-          New task
-        </button>
-      </header>
-      <div className="today-toolbar">
-        <div className="task-tabs" aria-label="Task filter">
-          {(
-            [
-              ["all", "Today", pending.length + completed.length],
-              ["open", "To do", pending.length],
-              ["completed", "Completed", completed.length],
-            ] as const
-          ).map(([value, label, count]) => (
-            <button
-              key={value}
-              aria-pressed={filter === value}
-              onClick={() => setFilter(value)}
-            >
-              {label}
-              <span>{count}</span>
-            </button>
-          ))}
+        <div className="today-header-actions">
+          <button
+            className="plan-day-button"
+            onClick={() => setPlannerOpen(true)}
+          >
+            <Sparkles size={16} /> Plan my day
+          </button>
+          <button className="primary-button" onClick={onOpenAITaskModal}>
+            <Plus size={16} /> New task
+          </button>
         </div>
-        <span className="planned-time">
-          <Clock size={14} />
-          {formatMinutes(minutes)} planned
-        </span>
-      </div>
-      <div className="today-columns">
-        <section className="today-tasks" aria-label="Today's tasks">
-          <div className="task-column-labels">
-            <span>Task</span>
-            <span>Estimate</span>
+      </header>
+      <section className="today-progress-card" aria-label="Today's progress">
+        <div className="today-progress-copy">
+          <span>TODAY’S PROGRESS</span>
+          <strong>{completion}%</strong>
+        </div>
+        <div className="today-progress-metrics">
+          <div>
+            <strong>
+              {completed.length} / {totalTasks}
+            </strong>
+            <span>tasks completed</span>
           </div>
-          {filter !== "completed" && (
-            <div className="task-list">
-              {pending.length ? (
-                pending.map((t) => taskRow(t))
-              ) : (
-                <div className="task-empty">
-                  <CheckCircle2 size={23} />
-                  <p>Nothing left for today.</p>
-                  <span>Add a task below or plan your next few days.</span>
-                </div>
-              )}
+          <div>
+            <strong>{formatFocusTime(focusedToday)}</strong>
+            <span>focused</span>
+          </div>
+          <div>
+            <strong>{formatMinutes(remainingMinutes)}</strong>
+            <span>estimated remaining</span>
+          </div>
+        </div>
+        <div className="today-progress-track">
+          <motion.i
+            initial={{ width: 0 }}
+            animate={{ width: `${completion}%` }}
+            transition={{ duration: 0.55, ease: "easeOut" }}
+          />
+        </div>
+      </section>
+      <div className="smart-today-grid">
+        <main className="smart-task-column">
+          <div className="smart-section-heading">
+            <div>
+              <span>DO THE NEXT RIGHT THING</span>
+              <h2>Today’s tasks</h2>
+            </div>
+            <div className="task-tabs" aria-label="Task filter">
+              {(
+                [
+                  ["all", "All", totalTasks],
+                  ["open", "To do", pending.length],
+                  ["completed", "Done", completed.length],
+                ] as const
+              ).map(([value, label, count]) => (
+                <button
+                  key={value}
+                  aria-pressed={filter === value}
+                  onClick={() => setFilter(value)}
+                >
+                  {label}
+                  <span>{count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <AnimatePresence mode="popLayout">
+            {filter !== "completed" &&
+              visiblePending.map((task) => taskCard(task))}
+            {filter !== "open" && completed.map((task) => taskCard(task, true))}
+          </AnimatePresence>
+          {!pending.length && filter !== "completed" && (
+            <div className="compact-empty-state">
+              <CheckCircle2 size={20} />
+              <div>
+                <strong>Nothing planned yet.</strong>
+                <span>Capture something you’re working toward.</span>
+              </div>
+              <button onClick={onOpenAITaskModal}>Add task</button>
             </div>
           )}
-          {filter !== "completed" && (
-            <form className="inline-task-form" onSubmit={add}>
-              <Plus size={16} />
-              <input
-                aria-label="New task title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Add a task…"
-              />
-              <select
-                aria-label="Task priority"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as Priority)}
-              >
-                <option value="low">Low priority</option>
-                <option value="medium">Normal</option>
-                <option value="high">High priority</option>
-                <option value="urgent">Urgent</option>
-              </select>
-              {title && (
-                <button type="submit" aria-label="Add task">
-                  <ArrowUpRight size={17} />
-                </button>
-              )}
-            </form>
+          {pending.length > 8 && filter !== "completed" && (
+            <button
+              className="show-more-tasks"
+              onClick={() => setShowAll(!showAll)}
+            >
+              {showAll ? "Show less" : `Show ${pending.length - 8} more tasks`}
+              <ArrowRight size={13} />
+            </button>
           )}
-          {filter !== "open" && completed.length > 0 && (
-            <section className="completed-section">
-              <div className="list-heading">
-                <h2>
-                  Completed <span>{completed.length}</span>
-                </h2>
+          <form className="smart-inline-add" onSubmit={add}>
+            <Plus size={16} />
+            <input
+              aria-label="New task title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Quick add a task…"
+            />
+            <select
+              aria-label="Task priority"
+              value={priority}
+              onChange={(event) => setPriority(event.target.value as Priority)}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+            <button
+              type="submit"
+              disabled={!title.trim()}
+              aria-label="Add task"
+            >
+              <ArrowUpRight size={16} />
+            </button>
+          </form>
+          <button className="review-day-button" onClick={onOpenDayReview}>
+            <span>
+              <CheckCircle2 size={15} /> Wrap up your day
+            </span>
+            <span>
+              Review progress <ArrowRight size={13} />
+            </span>
+          </button>
+        </main>
+        <aside className="smart-today-aside">
+          <section className="your-plan-card">
+            <span>
+              <Sparkles size={13} /> YOUR PLAN
+            </span>
+            <h3>
+              {plannedTasks.length
+                ? `${plannedTasks.length} focus blocks are ready.`
+                : `${formatMinutes(availableMinutes)} available today.`}
+            </h3>
+            <p>
+              {plannedTasks.length
+                ? `Your next block starts at ${plannedTasks[0]?.start}. Adjust it whenever your day changes.`
+                : "Let Planny turn your deadlines, priorities and routines into a realistic day."}
+            </p>
+            <button onClick={() => setPlannerOpen(true)}>
+              {plannedTasks.length ? "Review plan" : "Plan my day"}
+              <ArrowRight size={14} />
+            </button>
+          </section>
+          {nextUp && (
+            <section className="next-up-card">
+              <span>NEXT UP</span>
+              <h3>{nextUp.title}</h3>
+              <strong>
+                {formatMinutes(nextUp.estimated_duration_minutes)}
+              </strong>
+              <div>
+                {nextTaskReason(nextUp, availableMinutes).map((reason) => (
+                  <small key={reason}>
+                    <i />
+                    {reason}
+                  </small>
+                ))}
               </div>
-              {completed.map((t) => taskRow(t, true))}
+              <button onClick={() => onStartFocus(nextUp)}>
+                <Play size={15} /> Start focus
+              </button>
             </section>
           )}
-          {filter === "completed" && completed.length === 0 && (
-            <p className="task-empty">No completed tasks today yet.</p>
-          )}
-          <div className="day-review-link">
-            <span>
-              {completed.length} of {completed.length + pending.length} tasks
-              completed
-            </span>
-            <button onClick={onOpenDayReview}>
-              Review day <ArrowUpRight size={13} />
-            </button>
-          </div>
-        </section>
-        <aside className="today-agenda">
-          <div className="list-heading">
-            <h2>Daily routine</h2>
-            <RepeatLabel count={daily.length} />
-          </div>
-          {daily.length === 0 && (
-            <p className="agenda-empty">No routines scheduled today.</p>
-          )}
-          <div className="routine-list">
-            {daily.map((r) => {
+          <section className="today-routines-card">
+            <div>
+              <span>TODAY’S ROUTINES</span>
+              <button onClick={onOpenRoutines}>View all</button>
+            </div>
+            {daily.slice(0, 3).map((routine) => {
               const done = routineInstances.some(
-                (i) => i.routine_id === r.id && i.status === "completed",
+                (item) =>
+                  item.routine_id === routine.id && item.status === "completed",
               );
               return (
                 <button
-                  key={r.id}
-                  title={r.description || r.title}
-                  className={`routine-row ${done ? "is-done" : ""}`}
-                  onClick={() => syncEngine.toggleRoutineCompletion(r.id)}
-                  aria-label={`${done ? "Reopen" : "Complete"} routine ${r.title}`}
+                  key={routine.id}
+                  className={done ? "done" : ""}
+                  onClick={() => syncEngine.toggleRoutineCompletion(routine.id)}
                 >
-                  <span className="routine-time">{r.time_of_day}</span>
-                  <span className="routine-name">{r.title}</span>
-                  <span className="routine-check">
-                    {done && <Check size={11} />}
-                  </span>
+                  <span>{routine.time_of_day}</span>
+                  <strong>{routine.title}</strong>
+                  <i>{done && <Check size={11} />}</i>
                 </button>
               );
             })}
-          </div>
-          <section className="focus-section">
-            <div className="list-heading">
-              <h2>Time to lock in</h2>
-              <Zap size={20} />
-            </div>
-            <p>{pending[0]?.title || "A quiet place to work."}</p>
-            <span>
-              {pending[0]
-                ? `${formatMinutes(pending[0].estimated_duration_minutes)} · ${pending[0].project?.title || "Personal task"}`
-                : "Choose a task to begin a focused session."}
-            </span>
-            <button
-              className="secondary-button"
-              onClick={() =>
-                pending[0] ? onStartFocus(pending[0]) : onOpenAITaskModal()
-              }
-            >
-              <Play size={16} />
-              {pending[0] ? "Start session" : "Add a task"}
-            </button>
+            {!daily.length && (
+              <div className="aside-empty">
+                <Repeat2 size={15} /> No routines scheduled today.
+              </div>
+            )}
           </section>
-          <button className="briefing-link" onClick={onOpenBriefing}>
-            <Sun size={15} />
-            <span>Daily briefing</span>
-            <ArrowUpRight size={14} />
-          </button>
         </aside>
       </div>
+      <PlanMyDayModal
+        isOpen={plannerOpen}
+        onClose={() => setPlannerOpen(false)}
+        tasks={tasks}
+        routines={routines}
+        sessions={focusSessions}
+        endOfDay={endOfDay}
+        existingPlan={currentPlan}
+      />
     </div>
   );
-}
-function RepeatLabel({ count }: { count: number }) {
-  return <span>{count} scheduled</span>;
 }

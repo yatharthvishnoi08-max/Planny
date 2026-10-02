@@ -141,18 +141,36 @@ export function AppLayout({
           <Plus size={16} />
           <span>New task</span>
         </button>
-        <span className="nav-section-title">MAKE IT HAPPEN</span>
+        <span className="nav-section-title">WORK</span>
         <nav aria-label="Workspace" className="shell-nav-group">
-          {navigation.slice(0, 5).map(renderNav)}
+          {navigation
+            .filter((item) =>
+              ["today", "upcoming", "calendar"].includes(item.id),
+            )
+            .map(renderNav)}
         </nav>
         <div className="shell-divider" />
-        <span className="nav-section-title">KEEP IT TOGETHER</span>
+        <span className="nav-section-title">ORGANIZE</span>
         <nav aria-label="Personal" className="shell-nav-group">
-          {navigation.slice(5, 8).map(renderNav)}
+          {navigation
+            .filter((item) =>
+              ["projects", "routines", "knowledge"].includes(item.id),
+            )
+            .map(renderNav)}
         </nav>
         <div className="shell-divider" />
+        <span className="nav-section-title">THINK</span>
         <nav aria-label="Tools" className="shell-nav-group">
-          {navigation.slice(8).map(renderNav)}
+          {navigation
+            .filter((item) => ["brain-dump", "ai-assistant"].includes(item.id))
+            .map(renderNav)}
+        </nav>
+        <div className="shell-divider" />
+        <span className="nav-section-title">PERSONAL</span>
+        <nav aria-label="Insights" className="shell-nav-group">
+          {navigation
+            .filter((item) => item.id === "focus-insights")
+            .map(renderNav)}
         </nav>
         <div className="shell-bottom">
           <button
@@ -343,11 +361,11 @@ export function AppLayout({
           <span>Today</span>
         </button>
         <button
-          onClick={() => navigate("calendar")}
-          aria-current={currentTab === "calendar" ? "page" : undefined}
+          onClick={() => navigate("upcoming")}
+          aria-current={currentTab === "upcoming" ? "page" : undefined}
         >
-          <Calendar size={20} />
-          <span>Calendar</span>
+          <CalendarDays size={20} />
+          <span>Upcoming</span>
         </button>
         <button
           onClick={onOpenAITask}
@@ -357,11 +375,11 @@ export function AppLayout({
           <Plus size={23} />
         </button>
         <button
-          aria-current={currentTab === "ai-assistant" ? "page" : undefined}
-          onClick={() => navigate("ai-assistant")}
+          aria-current={currentTab === "focus-insights" ? "page" : undefined}
+          onClick={() => navigate("focus-insights")}
         >
-          <Sparkles size={20} />
-          <span>Assistant</span>
+          <ChartNoAxesCombined size={20} />
+          <span>Focus</span>
         </button>
         <button onClick={() => setMore(true)}>
           <MoreHorizontal size={20} />

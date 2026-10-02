@@ -7,16 +7,18 @@ import {
   isHostedAIAvailable,
 } from "../../lib/ai";
 import { localDate, dateAtTime } from "../../lib/dates";
-import { Priority } from "../../types/database";
+import { Priority, Project } from "../../types/database";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onConfirmTask: (task: ParsedTaskResult) => void;
+  projects?: Project[];
 }
 export const AITaskModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onConfirmTask,
+  projects = [],
 }) => {
   const [mode, setMode] = useState<"manual" | "assist">("manual");
   const [title, setTitle] = useState("");
@@ -26,6 +28,7 @@ export const AITaskModal: React.FC<Props> = ({
   const [time, setTime] = useState("18:00");
   const [duration, setDuration] = useState(30);
   const [subtasks, setSubtasks] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +43,7 @@ export const AITaskModal: React.FC<Props> = ({
       setTime("18:00");
       setDuration(30);
       setSubtasks("");
+      setProjectId("");
       setPrompt("");
       setBusy(false);
       setError("");
@@ -94,6 +98,7 @@ export const AITaskModal: React.FC<Props> = ({
           .split("\n")
           .map((s) => s.trim())
           .filter(Boolean),
+        project_id: projectId || null,
       });
       onClose();
     } catch (e) {
@@ -204,6 +209,13 @@ export const AITaskModal: React.FC<Props> = ({
               ))}
             </div>
             <div className="form-grid">
+              <label>
+                Project
+                <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+                  <option value="">No project</option>
+                  {projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
+                </select>
+              </label>
               <label>
                 Priority
                 <select

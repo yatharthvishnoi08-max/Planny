@@ -1,167 +1,229 @@
+import { useState } from "react";
 import {
-  localDate,
-  isTodayTask,
-  isPending,
-  routineOccursOn,
-} from "../../lib/dates";
-import React from "react";
-import { Task } from "../../types/database";
-import { Check, X, Moon, ArrowRight, Calendar, Trash2 } from "lucide-react";
+  ArrowRight,
+  Calendar,
+  Check,
+  Clock3,
+  Moon,
+  Sparkles,
+  X,
+} from "lucide-react";
+import type { DailyPlan, FocusSession, Task } from "../../types/database";
+import { focusSecondsForDay, formatFocusTime } from "../../lib/focusAnalytics";
+import { isPending, isTodayTask, localDate } from "../../lib/dates";
 import { syncEngine } from "../../lib/sync";
 
-interface DayReviewModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  tasks: Task[];
-}
-
-export const DayReviewModal: React.FC<DayReviewModalProps> = ({
+export function DayReviewModal({
   isOpen,
   onClose,
   tasks,
-}) => {
+  focusSessions,
+  dailyPlans,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  tasks: Task[];
+  focusSessions: FocusSession[];
+  dailyPlans: DailyPlan[];
+}) {
+  const [wentWell, setWentWell] = useState("");
+  const [gotInWay, setGotInWay] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [tomorrowPlanned, setTomorrowPlanned] = useState(false);
   if (!isOpen) return null;
-
-  const completedTasks = tasks.filter(
-    (t) => t.status === "completed" && isTodayTask(t),
+  const completed = tasks.filter(
+    (task) => task.status === "completed" && isTodayTask(task),
   );
-  const incompleteTasks = tasks.filter((t) => isPending(t) && isTodayTask(t));
+  const incomplete = tasks.filter(
+    (task) => isPending(task) && isTodayTask(task),
+  );
+  const total = completed.length + incomplete.length;
+  const percent = total ? Math.round((completed.length / total) * 100) : 0;
+  const focused = focusSecondsForDay(focusSessions, new Date());
+  const today = localDate();
+  const currentPlan = dailyPlans.find((plan) => plan.date === today);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowDate = localDate(tomorrow);
+  const tomorrowCount = tasks.filter(
+    (task) =>
+      isPending(task) &&
+      (task.start_date === tomorrowDate ||
+        (task.deadline && localDate(new Date(task.deadline)) === tomorrowDate)),
+  ).length;
 
-  const handleMoveToTomorrow = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    syncEngine.saveTask({
-      ...task,
-      start_date: localDate(tomorrow),
-      deadline: tomorrow.toISOString(),
+  const saveReview = () => {
+    let existingNotes: Record<string, unknown> = {};
+    try {
+      existingNotes = currentPlan?.notes ? JSON.parse(currentPlan.notes) : {};
+    } catch {}
+    const now = new Date().toISOString();
+    syncEngine.saveDailyPlan({
+      id: currentPlan?.id || crypto.randomUUID(),
+      user_id: syncEngine.getUserId(),
+      date: today,
+      briefing_shown: currentPlan?.briefing_shown || false,
+      day_review_completed: true,
+      planned_task_ids:
+        currentPlan?.planned_task_ids ||
+        tasks.filter((task) => isTodayTask(task)).map((task) => task.id),
+      notes: JSON.stringify({
+        ...existingNotes,
+        review: {
+          wentWell: wentWell.trim(),
+          gotInWay: gotInWay.trim(),
+          completedAt: now,
+        },
+      }),
+      created_at: currentPlan?.created_at || now,
+      updated_at: now,
     });
+    setSaved(true);
   };
-
-  const handleDelete = (taskId: string) => {
-    syncEngine.deleteTask(taskId);
+  const planTomorrow = () => {
+    for (const task of incomplete)
+      syncEngine.saveTask({ ...task, start_date: tomorrowDate });
+    setTomorrowPlanned(true);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
-      <div className="w-full max-w-lg rounded-2xl bg-surface-100 border border-surface-border p-6 shadow-2xl relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1 rounded-lg"
-        >
-          <X className="w-4 h-4" />
-        </button>
-
-        <div className="flex items-center space-x-2.5 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-            <Moon className="w-5 h-5" />
-          </div>
+    <div
+      className="modal-backdrop review-backdrop"
+      onClick={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section
+        className="composer daily-review-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="review-title"
+      >
+        <div className="composer-heading">
           <div>
-            <h3 className="text-base font-medium text-foreground">
-              Day Review
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Consolidate achievements and organize unfinished work
-            </p>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-surface-200 border border-surface-border mb-4 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            Overall Completion
-          </span>
-          <span className="text-sm font-semibold font-mono text-emerald-400">
-            {completedTasks.length} /{" "}
-            {completedTasks.length + incompleteTasks.length} completed
-          </span>
-        </div>
-
-        {/* Completed list */}
-        {completedTasks.length > 0 && (
-          <div className="mb-4">
-            <span className="text-xs font-medium text-muted-foreground block mb-2">
-              Completed Today
+            <span className="page-eyebrow">
+              <Moon size={13} /> CLOSE THE LOOP
             </span>
-            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-              {completedTasks.map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-center space-x-2 text-xs text-foreground/80 py-1"
-                >
-                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span className="line-through">{t.title}</span>
-                </div>
-              ))}
-            </div>
+            <h2 id="review-title">
+              Daily review<span className="accent-period">.</span>
+            </h2>
           </div>
-        )}
-
-        {/* Incomplete list with action triggers */}
-        <div>
-          <span className="text-xs font-medium text-muted-foreground block mb-2">
-            Incomplete ({incompleteTasks.length})
-          </span>
-          {incompleteTasks.length === 0 ? (
-            <p className="text-xs text-emerald-400 py-2">
-              All tasks completed for today! 🎉
-            </p>
-          ) : (
-            <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
-              {incompleteTasks.map((t) => (
-                <div
-                  key={t.id}
-                  className="p-3 bg-surface-200 border border-surface-border rounded-xl"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-foreground">
-                      {t.title}
-                    </span>
-                    <span className="text-[10px] text-orange-400 font-mono uppercase">
-                      {t.priority}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-surface-border/50">
-                    <span className="text-[11px] text-muted-foreground">
-                      Move this to tomorrow?
-                    </span>
-                    <div className="flex items-center space-x-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleMoveToTomorrow(t.id)}
-                        className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded text-[11px] font-medium transition-colors flex items-center space-x-1"
-                      >
-                        <Calendar className="w-3 h-3" />
-                        <span>MOVE</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(t.id)}
-                        className="p-1 text-muted-foreground hover:text-red-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 flex justify-end">
           <button
-            type="button"
+            className="icon-button"
+            aria-label="Close daily review"
             onClick={onClose}
-            className="px-4 py-2 bg-surface-200 hover:bg-surface-hover border border-surface-border rounded-xl text-xs font-medium text-foreground transition-colors"
           >
-            Done Reviewing
+            <X size={19} />
           </button>
         </div>
-      </div>
+        <p className="review-intro">
+          Look at what actually happened, then make tomorrow lighter.
+        </p>
+        <div className="review-stats">
+          <div>
+            <Check size={16} />
+            <strong>{completed.length}</strong>
+            <span>completed</span>
+          </div>
+          <div>
+            <Calendar size={16} />
+            <strong>{incomplete.length}</strong>
+            <span>unfinished</span>
+          </div>
+          <div>
+            <Clock3 size={16} />
+            <strong>{formatFocusTime(focused, true)}</strong>
+            <span>focused</span>
+          </div>
+        </div>
+        <div className="review-progress">
+          <div>
+            <span>Planned work completed</span>
+            <strong>{percent}%</strong>
+          </div>
+          <i>
+            <b style={{ width: `${percent}%` }} />
+          </i>
+        </div>
+        <div className="review-task-columns">
+          <div>
+            <span>FINISHED</span>
+            {completed.slice(0, 5).map((task) => (
+              <p key={task.id}>
+                <Check size={12} />
+                {task.title}
+              </p>
+            ))}
+            {!completed.length && (
+              <small>Completed tasks will show here.</small>
+            )}
+          </div>
+          <div>
+            <span>STILL OPEN</span>
+            {incomplete.slice(0, 5).map((task) => (
+              <p key={task.id}>
+                <i />
+                {task.title}
+              </p>
+            ))}
+            {!incomplete.length && (
+              <small>Everything planned is finished.</small>
+            )}
+          </div>
+        </div>
+        <div className="review-reflection">
+          <label>
+            What went well?
+            <textarea
+              value={wentWell}
+              onChange={(event) => {
+                setSaved(false);
+                setWentWell(event.target.value);
+              }}
+              rows={2}
+              placeholder="A small win, a good decision, anything useful…"
+            />
+          </label>
+          <label>
+            What got in the way?
+            <textarea
+              value={gotInWay}
+              onChange={(event) => {
+                setSaved(false);
+                setGotInWay(event.target.value);
+              }}
+              rows={2}
+              placeholder="Be honest, not judgmental."
+            />
+          </label>
+        </div>
+        <div className="review-tomorrow">
+          <div>
+            <span>TOMORROW</span>
+            <strong>{tomorrowCount} tasks planned</strong>
+          </div>
+          <button
+            onClick={planTomorrow}
+            disabled={!incomplete.length || tomorrowPlanned}
+          >
+            {tomorrowPlanned
+              ? "Unfinished tasks moved"
+              : "Plan unfinished for tomorrow"}
+            <ArrowRight size={13} />
+          </button>
+        </div>
+        <div className="review-footer">
+          <button className="secondary-button" onClick={onClose}>
+            Close
+          </button>
+          <button
+            className="primary-button"
+            onClick={saveReview}
+            disabled={saved}
+          >
+            {saved ? "Review saved" : "Save review"}
+            <Sparkles size={14} />
+          </button>
+        </div>
+      </section>
     </div>
   );
-};
+}

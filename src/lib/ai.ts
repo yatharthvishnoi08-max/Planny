@@ -15,6 +15,7 @@ export interface ParsedTaskResult {
   deadline: string | null;
   estimated_duration_minutes: number;
   subtasks: string[];
+  project_id?: string | null;
 }
 
 export interface PersonalAssistantContext {
@@ -614,7 +615,9 @@ export async function processAssistantMessage(
         estimated_duration_minutes,
       }),
     );
-  const projects = syncEngine.getProjects().filter((project) => project.status === "active");
+  const projects = syncEngine
+    .getProjects()
+    .filter((project) => project.status === "active");
   const routines = syncEngine.getRoutines().filter((routine) => routine.active);
   const notes = syncEngine.getNotes();
   const resources = syncEngine.getResources();
@@ -623,10 +626,23 @@ export async function processAssistantMessage(
     pendingCount: pendingTasks.length,
     completedCount: tasks.filter((task) => task.status === "completed").length,
     nextTasks: pendingTasks
-      .sort((a, b) => String(a.deadline || "9999").localeCompare(String(b.deadline || "9999")))
+      .sort((a, b) =>
+        String(a.deadline || "9999").localeCompare(
+          String(b.deadline || "9999"),
+        ),
+      )
       .slice(0, 12),
-    projects: projects.slice(0, 12).map(({ id, title, status }) => ({ id, title, status })),
-    routines: routines.slice(0, 12).map(({ id, title, frequency, time_of_day }) => ({ id, title, frequency, time_of_day })),
+    projects: projects
+      .slice(0, 12)
+      .map(({ id, title, status }) => ({ id, title, status })),
+    routines: routines
+      .slice(0, 12)
+      .map(({ id, title, frequency, time_of_day }) => ({
+        id,
+        title,
+        frequency,
+        time_of_day,
+      })),
     notesCount: notes.length,
     resourcesCount: resources.length,
   };

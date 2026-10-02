@@ -2,18 +2,30 @@ import React, { useState, useEffect, useRef } from "react";
 import { Task, Subtask } from "../../types/database";
 import { Play, Pause, CheckCircle2, X, Sparkles, Check } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
-import confetti from "canvas-confetti";
+import { formatMinutes } from "../../lib/utils";
 
 interface FocusModeProps {
   task: Task;
   onClose: () => void;
+  nextTask?: Task;
+  todayTasks?: Task[];
+  onStartNext?: (task: Task) => void;
 }
 
-export const FocusMode: React.FC<FocusModeProps> = ({ task, onClose }) => {
+export const FocusMode: React.FC<FocusModeProps> = ({
+  task,
+  onClose,
+  nextTask,
+  todayTasks = [],
+  onStartNext,
+}) => {
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isActive, setIsActive] = useState(true);
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
   const [isCompletedSummary, setIsCompletedSummary] = useState(false);
+  const [targetMinutes, setTargetMinutes] = useState(
+    task.estimated_duration_minutes || 25,
+  );
 
   const startedAt = useRef(new Date().toISOString());
   const elapsed = useRef(0);
@@ -48,15 +60,6 @@ export const FocusMode: React.FC<FocusModeProps> = ({ task, onClose }) => {
   const handleFinishFocus = () => {
     setIsActive(false);
     setIsCompletedSummary(true);
-
-    try {
-      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-        confetti({
-          particleCount: 60,
-          spread: 55,
-          origin: { y: 0.6 },
-        });
-    } catch {}
 
     const completedSubs = subtasks.filter((s) => s.is_completed).length;
     syncEngine.logFocusSession({
@@ -110,6 +113,10 @@ export const FocusMode: React.FC<FocusModeProps> = ({ task, onClose }) => {
             <h1 className="text-2xl sm:text-3xl font-medium tracking-tight mb-6 text-foreground">
               {task.title}
             </h1>
+            <p className="focus-goal-copy">
+              Estimated {formatMinutes(task.estimated_duration_minutes)} · Goal{" "}
+              {formatMinutes(targetMinutes)}
+            </p>
 
             {/* Timer readout */}
             <div className="font-mono text-6xl sm:text-7xl font-light tracking-tight my-8 text-foreground/90">
@@ -140,6 +147,13 @@ export const FocusMode: React.FC<FocusModeProps> = ({ task, onClose }) => {
                 <span>Finish session</span>
               </button>
             </div>
+            <button
+              type="button"
+              className="focus-extend"
+              onClick={() => setTargetMinutes((minutes) => minutes + 5)}
+            >
+              + Extend goal by 5 minutes
+            </button>
 
             {/* Subtasks checklist */}
             {subtasks.length > 0 && (
@@ -185,16 +199,33 @@ export const FocusMode: React.FC<FocusModeProps> = ({ task, onClose }) => {
               <Sparkles className="w-8 h-8" />
             </div>
 
-            <h2 className="text-2xl font-medium text-foreground mb-2">
-              Great work!
-            </h2>
+            <h2 className="text-2xl font-medium text-foreground mb-2">Nice.</h2>
             <p className="text-4xl font-mono font-light text-emerald-400 my-4">
               {Math.max(1, Math.round(secondsElapsed / 60))} minutes focused.
             </p>
             <p className="text-xs text-muted-foreground mb-8">
-              Session saved to your workspace. Mark the task done when all its
-              work is finished.
+              Session saved. You estimated{" "}
+              {formatMinutes(task.estimated_duration_minutes)} for this task;
+              this session tracked the actual time above.
             </p>
+
+            <div className="focus-summary-progress">
+              <span>Today’s progress</span>
+              <strong>
+                {
+                  todayTasks.filter((item) => item.status === "completed")
+                    .length
+                }{" "}
+                / {todayTasks.length} tasks
+              </strong>
+              <i>
+                <b
+                  style={{
+                    width: `${todayTasks.length ? (todayTasks.filter((item) => item.status === "completed").length / todayTasks.length) * 100 : 0}%`,
+                  }}
+                />
+              </i>
+            </div>
 
             <button
               type="button"
@@ -205,11 +236,18 @@ export const FocusMode: React.FC<FocusModeProps> = ({ task, onClose }) => {
                   .find((t) => t.id === task.id);
                 if (latest && latest.status !== "completed")
                   syncEngine.toggleTaskCompletion(task.id);
-                onClose();
+                if (nextTask && onStartNext) onStartNext(nextTask);
+                else onClose();
               }}
             >
-              Mark task done
+              {nextTask ? "Complete & start next" : "Mark task done"}
             </button>
+            {nextTask && (
+              <p className="focus-next-copy">
+                Next: {nextTask.title} ·{" "}
+                {formatMinutes(nextTask.estimated_duration_minutes)}
+              </p>
+            )}
             <br />
             <button
               type="button"

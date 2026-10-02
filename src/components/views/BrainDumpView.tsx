@@ -20,24 +20,26 @@ interface BrainDumpViewProps {
 
 export const BrainDumpView: React.FC<BrainDumpViewProps> = ({ items }) => {
   const [newText, setNewText] = useState("");
-  const [organizingItemId, setOrganizingItemId] = useState<string | null>(null);
-  const [suggestion, setSuggestion] = useState<any>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newText.trim()) return;
-    syncEngine.addBrainDump(newText.trim());
+    newText
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 30)
+      .forEach((line) => syncEngine.addBrainDump(line));
     setNewText("");
   };
 
   const handleOrganize = (item: BrainDump) => {
-    setOrganizingItemId(item.id);
     const result = classifyBrainDump(item);
-    setSuggestion({ item, ...result });
+    setSuggestions([{ item, ...result }]);
   };
 
-  const handleConfirmConvert = () => {
-    if (!suggestion) return;
+  const convertSuggestion = (suggestion: any) => {
     const { item, suggestedType, actionPayload } = suggestion;
 
     const convertedId = crypto.randomUUID();
@@ -102,8 +104,11 @@ export const BrainDumpView: React.FC<BrainDumpViewProps> = ({ items }) => {
       converted_type: suggestedType,
       converted_id: convertedId,
     });
-    setOrganizingItemId(null);
-    setSuggestion(null);
+  };
+
+  const handleConfirmConvert = () => {
+    suggestions.forEach(convertSuggestion);
+    setSuggestions([]);
   };
 
   const inboxItems = items.filter((i) => i.status === "inbox");
@@ -117,8 +122,8 @@ export const BrainDumpView: React.FC<BrainDumpViewProps> = ({ items }) => {
             Brain Dump
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Friction-free scratchpad. Capture thoughts now, categorize later
-            with AI
+            Get everything out of your head. Review before Planny creates
+            anything.
           </p>
         </div>
 
@@ -128,50 +133,88 @@ export const BrainDumpView: React.FC<BrainDumpViewProps> = ({ items }) => {
       </div>
 
       {/* Quick capture form */}
-      <form onSubmit={handleAdd} className="mb-6">
+      <form onSubmit={handleAdd} className="brain-capture mb-6">
         <div className="relative">
-          <input
-            type="text"
+          <textarea
             value={newText}
             onChange={(e) => setNewText(e.target.value)}
-            placeholder="Type anything: 'Need to learn Docker', 'Hackathon idea', 'Buy keyboard'..."
-            className="w-full bg-surface-100 border border-surface-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 shadow-sm"
+            rows={6}
+            placeholder={
+              "What’s on your mind?\n\nStudy physics\nFinish website\nCall uncle\nBuy headphones"
+            }
+            className="w-full bg-surface-100 border border-surface-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 shadow-sm resize-none"
           />
           <button
             type="submit"
-            className="absolute right-2.5 top-2.5 p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs"
+            className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs"
           >
             <Plus className="w-4 h-4" />
+            Capture
           </button>
+        </div>
+        <div className="brain-capture-help">
+          <span>One thought per line works best.</span>
+          {inboxItems.length > 1 && (
+            <button
+              type="button"
+              onClick={() =>
+                setSuggestions(
+                  inboxItems.map((item) => ({
+                    item,
+                    ...classifyBrainDump(item),
+                  })),
+                )
+              }
+            >
+              <Sparkles size={13} /> Organize all {inboxItems.length}
+            </button>
+          )}
         </div>
       </form>
 
       {/* Suggestion confirmation card */}
-      {suggestion && (
+      {suggestions.length > 0 && (
         <div className="mb-6 p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/40 animate-fade-in">
           <div className="flex items-center space-x-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-2">
             <Sparkles className="w-4 h-4" />
-            <span>AI Organization Suggestion</span>
-          </div>
-
-          <div className="text-xs text-muted-foreground mb-1">
-            Original thought: "{suggestion.item.raw_text}"
-          </div>
-          <div className="text-sm font-medium text-foreground mb-2">
-            Convert to{" "}
-            <span className="uppercase text-indigo-300 font-mono">
-              [{suggestion.suggestedType}]
+            <span>
+              {suggestions.length}{" "}
+              {suggestions.length === 1 ? "thing" : "things"} ready to review
             </span>
-            : {suggestion.title}
           </div>
-          <p className="text-xs text-indigo-200/70 mb-4">{suggestion.reason}</p>
+          <div className="brain-review-list">
+            {suggestions.map((suggestion) => (
+              <div key={suggestion.item.id}>
+                <Check size={14} />
+                <span>
+                  <strong>{suggestion.title}</strong>
+                  <small>
+                    {suggestion.suggestedType} ·{" "}
+                    {suggestion.actionPayload.estimated_duration_minutes || 30}{" "}
+                    min · {suggestion.actionPayload.priority || "normal"}
+                  </small>
+                </span>
+                <button
+                  aria-label={`Remove ${suggestion.title}`}
+                  onClick={() =>
+                    setSuggestions((items) =>
+                      items.filter(
+                        (item) => item.item.id !== suggestion.item.id,
+                      ),
+                    )
+                  }
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
 
           <div className="flex items-center space-x-2 justify-end">
             <button
               type="button"
               onClick={() => {
-                setOrganizingItemId(null);
-                setSuggestion(null);
+                setSuggestions([]);
               }}
               className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
             >
@@ -183,7 +226,7 @@ export const BrainDumpView: React.FC<BrainDumpViewProps> = ({ items }) => {
               className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium flex items-center space-x-1.5 shadow-sm"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>Confirm & Create</span>
+              <span>Add all</span>
             </button>
           </div>
         </div>
