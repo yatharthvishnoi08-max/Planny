@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   ChevronRight,
   HelpCircle,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { SyncState, syncEngine } from "../../lib/sync";
@@ -24,6 +25,7 @@ export type NavigationTab =
   | "today"
   | "upcoming"
   | "calendar"
+  | "focus-insights"
   | "projects"
   | "routines"
   | "brain-dump"
@@ -43,6 +45,7 @@ const navigation = [
   { id: "today", label: "Today", icon: CheckSquare },
   { id: "upcoming", label: "Upcoming", icon: CalendarDays },
   { id: "calendar", label: "Calendar", icon: Calendar },
+  { id: "focus-insights", label: "Focus insights", icon: ChartNoAxesCombined },
   { id: "projects", label: "Projects", icon: Folder },
   { id: "routines", label: "Routines", icon: Repeat2 },
   { id: "brain-dump", label: "Brain dump", icon: Inbox },
@@ -140,16 +143,16 @@ export function AppLayout({
         </button>
         <span className="nav-section-title">MAKE IT HAPPEN</span>
         <nav aria-label="Workspace" className="shell-nav-group">
-          {navigation.slice(0, 4).map(renderNav)}
+          {navigation.slice(0, 5).map(renderNav)}
         </nav>
         <div className="shell-divider" />
         <span className="nav-section-title">KEEP IT TOGETHER</span>
         <nav aria-label="Personal" className="shell-nav-group">
-          {navigation.slice(4, 7).map(renderNav)}
+          {navigation.slice(5, 8).map(renderNav)}
         </nav>
         <div className="shell-divider" />
         <nav aria-label="Tools" className="shell-nav-group">
-          {navigation.slice(7).map(renderNav)}
+          {navigation.slice(8).map(renderNav)}
         </nav>
         <div className="shell-bottom">
           <button
@@ -323,8 +326,9 @@ export function AppLayout({
                 ))}
               </div>
               <p className="composer-hint">
-                You can use tasks, routines and notes locally in this development
-                build. Deployed builds include account sync and Planny AI.
+                You can use tasks, routines and notes locally in this
+                development build. Deployed builds include account sync and
+                Planny AI.
               </p>
             </section>
           </div>,

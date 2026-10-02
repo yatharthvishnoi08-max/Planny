@@ -10,6 +10,7 @@ import {
   Note,
   Resource,
   BrainDump,
+  FocusSession,
 } from "./types/database";
 import { AppLayout, NavigationTab } from "./components/layout/AppLayout";
 import { TodayView } from "./components/views/TodayView";
@@ -21,6 +22,7 @@ import { BrainDumpView } from "./components/views/BrainDumpView";
 import { KnowledgeView } from "./components/views/KnowledgeView";
 import { AIAssistantView } from "./components/views/AIAssistantView";
 import { SettingsView } from "./components/views/SettingsView";
+import { FocusInsightsView } from "./components/views/FocusInsightsView";
 import { TaskDetailPanel } from "./components/tasks/TaskDetailPanel";
 import { AITaskModal } from "./components/tasks/AITaskModal";
 import { FocusMode } from "./components/focus/FocusMode";
@@ -53,6 +55,9 @@ export const App: React.FC = () => {
   const [brainDumps, setBrainDumps] = useState<BrainDump[]>(
     syncEngine.getBrainDumps(),
   );
+  const [focusSessions, setFocusSessions] = useState<FocusSession[]>(
+    syncEngine.getFocusSessions(),
+  );
 
   // Modals & Panels
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -74,6 +79,7 @@ export const App: React.FC = () => {
       setNotes(syncEngine.getNotes());
       setResources(syncEngine.getResources());
       setBrainDumps(syncEngine.getBrainDumps());
+      setFocusSessions(syncEngine.getFocusSessions());
     });
     return unsubscribe;
   }, []);
@@ -259,6 +265,10 @@ export const App: React.FC = () => {
         />
       )}
 
+      {currentTab === "focus-insights" && (
+        <FocusInsightsView sessions={focusSessions} tasks={tasks} />
+      )}
+
       {currentTab === "projects" && (
         <ProjectsView
           projects={projects}
@@ -342,7 +352,6 @@ export const App: React.FC = () => {
           setCurrentTab(tab);
         }}
       />
-
     </AppLayout>
   );
 };
