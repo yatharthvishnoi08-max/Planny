@@ -754,6 +754,177 @@ export const LandingPage: React.FC = () => {
               ))}
             </div>
           </Reveal>
+          <Reveal id="features" className="lp-section lp-feature-guide">
+            <span className="lp-eyebrow">GET TO KNOW YOUR WORKSPACE</span>
+            <h2>
+              Everything has a place.
+              <br />
+              <span>Including your next step.</span>
+            </h2>
+            <p>
+              Start with a single task. Add the structure you need as your day,
+              projects, and goals grow.
+            </p>
+            <div className="lp-feature-rows">
+              {[
+                [
+                  "01",
+                  "Today & Upcoming",
+                  "See what needs your attention",
+                  "Today brings current and overdue work together. Upcoming gives you a wider view so you can plan ahead instead of discovering deadlines at the last minute.",
+                  "Try it: capture three things you want to finish today.",
+                ],
+                [
+                  "02",
+                  "Projects & subtasks",
+                  "Make the big thing smaller",
+                  "Group related tasks into a project, break work into smaller steps, and keep deadlines, priorities, and time estimates alongside the work itself.",
+                  "Try it: split an assignment into research, outline, and a first draft.",
+                ],
+                [
+                  "03",
+                  "Assistant",
+                  "A planning partner with context",
+                  "Ask what to work on next, plan around the time you have, or turn an idea into tasks. Your assistant uses your workspace and saved conversation context. Proposed changes wait for your confirmation.",
+                  "Try it: ‘I have 45 minutes. What should I focus on?’",
+                ],
+                [
+                  "04",
+                  "Focus & daily review",
+                  "Give one thing your attention",
+                  "Start a focus session from a task, then review what you finished at the end of the day. Use the result to make your next plan more realistic.",
+                  "Try it: one task, one focused session, then a proper break.",
+                ],
+                [
+                  "05",
+                  "Routines",
+                  "Give repeat work a rhythm",
+                  "Keep recurring habits and regular responsibilities together with your tasks. Build consistency with a routine you can actually fit into your day.",
+                  "Try it: a short evening review or a regular study session.",
+                ],
+                [
+                  "06",
+                  "Brain dump, notes & links",
+                  "Catch the thought before it disappears",
+                  "Brain dump is a place for loose ideas. Notes and links hold the reference material you want to return to, while search helps you find your way back.",
+                  "Try it: save the idea now. Decide what to do with it later.",
+                ],
+              ].map(([n, label, title, description, tip], i) => (
+                <article
+                  key={n}
+                  className="lp-feature-row"
+                  style={{ "--tile": colors[i] } as React.CSSProperties}
+                >
+                  <span className="lp-feature-number">{n}</span>
+                  <div>
+                    <span className="lp-eyebrow">{label}</span>
+                    <h3>{title}</h3>
+                  </div>
+                  <div>
+                    <p>{description}</p>
+                    <small>{tip}</small>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </Reveal>
+          <Reveal className="lp-section lp-use-cases">
+            <span className="lp-eyebrow">BUILT AROUND YOUR REAL DAY</span>
+            <h2>
+              Different lives.
+              <br />
+              <span>The same need for clarity.</span>
+            </h2>
+            <div className="lp-use-grid">
+              {[
+                [
+                  "For students",
+                  "More than the next deadline.",
+                  "Bring assignments, exam revision, personal projects, and downtime into the same picture.",
+                  "Revise chapter 4, draft my lab report, and fit in a workout",
+                ],
+                [
+                  "For working professionals",
+                  "Keep the important work visible.",
+                  "Break deliverables into steps, track follow-ups, and protect time for work that needs your full attention.",
+                  "Prepare the client presentation, review the proposal, and reply to feedback",
+                ],
+                [
+                  "For builders & freelancers",
+                  "Move the project forward.",
+                  "Turn a rough idea into a project, collect useful resources, and choose a manageable next action.",
+                  "Research my product idea, sketch the homepage, and test the signup flow",
+                ],
+              ].map(([label, title, description, prompt], i) => (
+                <article
+                  key={label}
+                  style={{ "--tile": colors[i] } as React.CSSProperties}
+                >
+                  <span className="lp-eyebrow">{label}</span>
+                  <h3>{title}</h3>
+                  <p>{description}</p>
+                  <button
+                    className="lp-text-button"
+                    onClick={() => save(prompt)}
+                  >
+                    Start with this plan <ArrowUpRight size={16} />
+                  </button>
+                </article>
+              ))}
+            </div>
+          </Reveal>
+          <Reveal id="faq" className="lp-section lp-faq">
+            <div>
+              <span className="lp-eyebrow">
+                A FEW THINGS YOU MIGHT BE WONDERING
+              </span>
+              <h2>
+                Less guessing.
+                <br />
+                <span>More getting started.</span>
+              </h2>
+            </div>
+            <div>
+              {[
+                [
+                  "Do I have to sign up to try Planny?",
+                  "No. The planning previews on this page work without an account. Create an account when you want your own workspace. The thoughts you enter in the preview are carried into your first-task setup on this device.",
+                ],
+                [
+                  "Is the homepage demo using AI?",
+                  "The homepage is a local interactive preview: it separates your input into sample tasks and shows suggested estimates. The assistant inside your signed-in workspace uses AI and your workspace context.",
+                ],
+                [
+                  "Can the AI change my tasks by itself?",
+                  "The assistant presents proposed actions for you to review and confirm. You stay in control of whether those changes are applied.",
+                ],
+                [
+                  "Will Planny remember our conversations?",
+                  "The assistant saves conversation history and a compact set of context and preferences for your account. It uses a bounded amount of context for each request, so it may not recall every detail of an old conversation.",
+                ],
+                [
+                  "Can I use it on my laptop and phone?",
+                  "Yes. Open planny.in in your browser and sign in to the same account. Your workspace syncs through your account, so you can return to your tasks from another device.",
+                ],
+                [
+                  "What happens if my connection drops?",
+                  "Task edits are kept on your device while they wait to sync. Reconnect to save pending changes to your account. The cloud AI assistant needs an internet connection.",
+                ],
+                [
+                  "How should I start without overplanning?",
+                  "Add one task you genuinely want to finish, give it a realistic estimate, and start a focus session. Projects, routines, and the assistant are there when you need more structure.",
+                ],
+              ].map(([question, answer]) => (
+                <details key={question}>
+                  <summary>
+                    {question}
+                    <span aria-hidden="true">+</span>
+                  </summary>
+                  <p>{answer}</p>
+                </details>
+              ))}
+            </div>
+          </Reveal>
           <Reveal id="access" className="lp-section lp-access">
             <span className="lp-eyebrow">EARLY DAYS. BIG POSSIBILITIES.</span>
             <h2>

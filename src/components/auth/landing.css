@@ -1271,3 +1271,133 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* The signed-in workspace owns its scrolling; the public website uses the document. */
+html:has(.lp) {
+  height: auto;
+  min-height: 100%;
+  overflow-x: clip;
+  overflow-y: auto;
+  scroll-padding-top: 100px;
+}
+body:has(.lp),
+#root:has(.lp) {
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+}
+html:has(.lp-auth-backdrop) {
+  overflow-y: hidden;
+}
+.lp-feature-guide {
+  border-top: 1px solid #ffffff12;
+}
+.lp-feature-rows {
+  margin-top: 40px;
+}
+.lp-feature-row {
+  display: grid;
+  grid-template-columns: 45px 1fr 1.35fr;
+  gap: 28px;
+  padding: 32px 0;
+  border-top: 1px solid #ffffff12;
+}
+.lp-feature-number {
+  color: var(--tile);
+  font-size: 13px;
+  font-family: monospace;
+}
+.lp-feature-row .lp-eyebrow {
+  color: var(--tile);
+}
+.lp-feature-row h3,
+.lp-use-grid h3 {
+  font-size: 23px;
+  line-height: 1.25;
+  letter-spacing: -0.7px;
+  margin: 12px 0;
+}
+.lp-feature-row p {
+  max-width: none;
+}
+.lp-feature-row small {
+  display: block;
+  margin-top: 15px;
+  font-size: 11px;
+  color: #c3ccba;
+  line-height: 1.7;
+}
+.lp-use-cases {
+  border-top: 1px solid #ffffff12;
+}
+.lp-use-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 35px;
+  margin-top: 40px;
+}
+.lp-use-grid article {
+  border-top: 2px solid var(--tile);
+  padding-top: 24px;
+}
+.lp-use-grid .lp-eyebrow {
+  color: var(--tile);
+}
+.lp-use-grid p {
+  font-size: 13px;
+}
+.lp-faq {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 65px;
+  border-top: 1px solid #ffffff12;
+}
+.lp-faq details {
+  border-bottom: 1px solid #ffffff18;
+  padding: 21px 0;
+}
+.lp-faq summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 14px;
+}
+.lp-faq summary::-webkit-details-marker {
+  display: none;
+}
+.lp-faq summary span {
+  color: var(--lime);
+  font-size: 20px;
+  line-height: 1;
+}
+.lp-faq details[open] summary span {
+  transform: rotate(45deg);
+}
+.lp-faq details p {
+  margin-top: 16px;
+  max-width: none;
+  font-size: 13px;
+}
+.lp-faq summary:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 6px;
+}
+@media (max-width: 700px) {
+  .lp-feature-row {
+    grid-template-columns: 25px 1fr;
+    gap: 15px;
+  }
+  .lp-feature-row > div:last-child {
+    grid-column: 2;
+  }
+  .lp-feature-row h3 {
+    font-size: 21px;
+  }
+  .lp-use-grid,
+  .lp-faq {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+}
