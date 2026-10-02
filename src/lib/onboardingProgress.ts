@@ -1,4 +1,9 @@
 import type { DraftTask } from "./planDraft";
+export type RoutineDraft = {
+  id: string;
+  title: string;
+  time: string;
+};
 export type OnboardingProgress = {
   step: number;
   name: string;
@@ -8,6 +13,7 @@ export type OnboardingProgress = {
   blockers: string[];
   planningStyle: string;
   taskBehavior: string;
+  routineDrafts: RoutineDraft[];
   planTasks: DraftTask[];
   welcomeId: string;
 };
@@ -29,7 +35,7 @@ export function readOnboardingProgress(
       "welcomeId",
     ] as const)
       if (typeof v[field] === "string") result[field] = v[field];
-    if (Number.isInteger(v.step) && v.step >= 0 && v.step <= 3)
+    if (Number.isInteger(v.step) && v.step >= 0 && v.step <= 4)
       result.step = v.step;
     if (Array.isArray(v.blockers))
       result.blockers = v.blockers
@@ -43,6 +49,17 @@ export function readOnboardingProgress(
             typeof t.id === "string" &&
             typeof t.title === "string" &&
             Number.isFinite(t.minutes),
+        )
+        .slice(0, 8);
+    if (Array.isArray(v.routineDrafts))
+      result.routineDrafts = v.routineDrafts
+        .filter(
+          (routine: RoutineDraft) =>
+            routine &&
+            typeof routine.id === "string" &&
+            typeof routine.title === "string" &&
+            typeof routine.time === "string" &&
+            /^([01]\d|2[0-3]):[0-5]\d$/.test(routine.time),
         )
         .slice(0, 8);
     return result;

@@ -26,6 +26,7 @@ interface AuthContextType {
     blockers: string[];
     planningStyle: string;
     taskBehavior: string;
+    routines: Array<{ title: string; time: string }>;
   }) => Promise<void>;
   updateTheme: (theme: "dark" | "light" | "system") => void;
 }

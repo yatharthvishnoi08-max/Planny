@@ -1,5 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Clock3,
+  Plus,
+  Repeat2,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { syncEngine } from "../../lib/sync";
 import { localDate } from "../../lib/dates";
@@ -18,6 +27,7 @@ import {
   readOnboardingProgress,
   saveOnboardingProgress,
   clearOnboardingProgress,
+  type RoutineDraft,
 } from "../../lib/onboardingProgress";
 import type { AIMessage } from "../../types/database";
 
@@ -87,6 +97,12 @@ export const OnboardingModal: React.FC<{
   const [taskBehavior, setTaskBehavior] = useState(
     saved.taskBehavior || "Do all of the above",
   );
+  const [routineDrafts, setRoutineDrafts] = useState<RoutineDraft[]>(
+    () =>
+      saved.routineDrafts || [
+        { id: crypto.randomUUID(), title: "", time: "08:00" },
+      ],
+  );
   const [draft] = useState(readPlanDraft);
   const [planTasks, setPlanTasks] = useState<DraftTask[]>(
     () =>
@@ -106,6 +122,7 @@ export const OnboardingModal: React.FC<{
         blockers,
         planningStyle,
         taskBehavior,
+        routineDrafts,
         planTasks,
         welcomeId,
       }),
@@ -122,6 +139,7 @@ export const OnboardingModal: React.FC<{
     blockers,
     planningStyle,
     taskBehavior,
+    routineDrafts,
     planTasks,
     welcomeId,
   ]);
@@ -184,6 +202,25 @@ export const OnboardingModal: React.FC<{
           updated_at: new Date().toISOString(),
         });
       }
+      for (const routine of routineDrafts.filter((item) => item.title.trim())) {
+        const existing = syncEngine
+          .getRoutines()
+          .find((item) => item.id === routine.id);
+        syncEngine.saveRoutine({
+          id: routine.id,
+          user_id: user.id,
+          title: routine.title.trim(),
+          description: "Added during Planny setup",
+          frequency: "daily",
+          days_of_week: [1, 2, 3, 4, 5, 6, 7],
+          interval_days: 1,
+          time_of_day: routine.time,
+          end_date: null,
+          active: true,
+          created_at: existing?.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
       const memory = await loadAssistantMemory(user.id);
       const welcome: AIMessage = {
         id: welcomeId,
@@ -202,6 +239,10 @@ export const OnboardingModal: React.FC<{
           `Productivity blockers: ${blockers.join(", ") || "not specified"}`,
           `Planning preference: ${planningStyle}`,
           `Default task behavior: ${taskBehavior}`,
+          `Daily routines: ${routineDrafts
+            .filter((item) => item.title.trim())
+            .map((item) => `${item.title.trim()} at ${item.time}`)
+            .join(", ") || "none yet"}`,
         ].slice(-12),
         messages: [
           ...memory.messages.filter((m) => m.id !== welcomeId),
@@ -218,6 +259,9 @@ export const OnboardingModal: React.FC<{
         blockers,
         planningStyle,
         taskBehavior,
+        routines: routineDrafts
+          .filter((item) => item.title.trim())
+          .map(({ title, time }) => ({ title: title.trim(), time })),
       });
       clearPlanDraft();
       clearOnboardingProgress(user.id);
@@ -233,6 +277,7 @@ export const OnboardingModal: React.FC<{
     "Let’s make Planny yours",
     "What gets in your way?",
     "How should your day feel?",
+    "What repeats every day?",
     "Let’s make your first win",
   ];
   return (
@@ -248,14 +293,15 @@ export const OnboardingModal: React.FC<{
               "About you",
               "Your challenges",
               "Your preferences",
+              "Your routines",
               "Your first plan",
             ][step]
           }{" "}
-          · {step + 1} / 4
+          · {step + 1} / 5
         </span>
       </header>
       <div className="onboarding-progress">
-        <i style={{ width: `${(step + 1) * 25}%` }} />
+        <i style={{ width: `${(step + 1) * 20}%` }} />
       </div>
       <section className="onboarding-panel">
         <span className="onboarding-kicker">
@@ -345,6 +391,96 @@ export const OnboardingModal: React.FC<{
             </div>
           )}
           {step === 3 && (
+            <div className="onboarding-stack routine-setup">
+              <div className="routine-explainer">
+                <span>
+                  <Repeat2 size={15} /> WHAT IS A ROUTINE?
+                </span>
+                <strong>A task you repeat regularly.</strong>
+                <p>
+                  A routine is something like working out, studying, planning
+                  tomorrow, taking medicine, or reading every night. Planny
+                  brings it back automatically, so you don’t recreate it each
+                  day.
+                </p>
+              </div>
+              <div className="routine-question">
+                <strong>What are some tasks you do every day?</strong>
+                <span>Add as many as you need, or skip this for now.</span>
+              </div>
+              <div className="routine-draft-list">
+                {routineDrafts.map((routine, index) => (
+                  <div className="routine-draft-row" key={routine.id}>
+                    <label>
+                      Everyday task
+                      <input
+                        value={routine.title}
+                        maxLength={100}
+                        placeholder={
+                          index === 0 ? "e.g. Study for 30 minutes" : "Another routine"
+                        }
+                        onChange={(event) =>
+                          setRoutineDrafts((items) =>
+                            items.map((item) =>
+                              item.id === routine.id
+                                ? { ...item, title: event.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span className="routine-time-label">
+                        <Clock3 size={12} /> Around
+                      </span>
+                      <input
+                        type="time"
+                        value={routine.time}
+                        onChange={(event) =>
+                          setRoutineDrafts((items) =>
+                            items.map((item) =>
+                              item.id === routine.id
+                                ? { ...item, time: event.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${routine.title || "routine"}`}
+                      onClick={() =>
+                        setRoutineDrafts((items) =>
+                          items.length === 1
+                            ? [{ ...items[0], title: "" }]
+                            : items.filter((item) => item.id !== routine.id),
+                        )
+                      }
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {routineDrafts.length < 8 && (
+                <button
+                  type="button"
+                  className="routine-add-button"
+                  onClick={() =>
+                    setRoutineDrafts((items) => [
+                      ...items,
+                      { id: crypto.randomUUID(), title: "", time: "08:00" },
+                    ])
+                  }
+                >
+                  <Plus size={15} /> Add another everyday task
+                </button>
+              )}
+            </div>
+          )}
+          {step === 4 && (
             <div className="onboarding-stack first-task">
               <div className="first-task-demo">
                 <span>YOUR STARTING PLAN</span>
@@ -403,13 +539,13 @@ export const OnboardingModal: React.FC<{
             disabled={
               saving ||
               (step === 0 && !name.trim()) ||
-              (step === 3 && planTasks.some((t) => !validDraft([t])))
+              (step === 4 && planTasks.some((t) => !validDraft([t])))
             }
-            onClick={() => (step < 3 ? setStep(step + 1) : void finish())}
+            onClick={() => (step < 4 ? setStep(step + 1) : void finish())}
           >
             {saving
               ? "Building your Planny…"
-              : step < 3
+              : step < 4
                 ? "Continue"
                 : "Enter my workspace"}
             <ArrowRight size={16} />

@@ -12,9 +12,9 @@ function setup() {
  return {api:exports,storage};
 }
 test('setup progress survives refresh and is isolated by account',()=>{
- const {api}=setup(); const value={step:3,name:'Alex',persona:'Student',wastedHours:'1–2 hours',taskSystem:'Calendar',blockers:['I forget tasks'],planningStyle:'Flexible',taskBehavior:'Estimate the time',planTasks:[{id:randomUUID(),title:'Study',minutes:45}],welcomeId:randomUUID()};
+ const {api}=setup(); const value={step:4,name:'Alex',persona:'Student',wastedHours:'1–2 hours',taskSystem:'Calendar',blockers:['I forget tasks'],planningStyle:'Flexible',taskBehavior:'Estimate the time',routineDrafts:[{id:randomUUID(),title:'Read',time:'21:00'}],planTasks:[{id:randomUUID(),title:'Study',minutes:45}],welcomeId:randomUUID()};
  assert.equal(api.saveOnboardingProgress('a',value),true);
- const restored=api.readOnboardingProgress('a');assert.equal(restored.step,3);assert.equal(restored.name,'Alex');assert.equal(restored.planTasks[0].id,value.planTasks[0].id);assert.equal(restored.welcomeId,value.welcomeId);
+ const restored=api.readOnboardingProgress('a');assert.equal(restored.step,4);assert.equal(restored.name,'Alex');assert.equal(restored.planTasks[0].id,value.planTasks[0].id);assert.equal(restored.routineDrafts[0].title,'Read');assert.equal(restored.welcomeId,value.welcomeId);
  assert.equal(Object.keys(api.readOnboardingProgress('b')).length,0);
  api.clearOnboardingProgress('a');assert.equal(Object.keys(api.readOnboardingProgress('a')).length,0);
 });
