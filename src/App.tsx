@@ -204,6 +204,7 @@ export const App: React.FC = () => {
   if (!isOnboarded)
     return (
       <OnboardingModal
+        key={user.id}
         isOpen
         onComplete={() => setCurrentTab("ai-assistant")}
       />

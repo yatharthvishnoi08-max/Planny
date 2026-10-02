@@ -17,6 +17,14 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./landing.css";
+import { PlanEditor } from "./PlanEditor";
+import {
+  draftTasks,
+  validDraft,
+  savePlanDraft,
+  type PlanDraft,
+  type DraftTask,
+} from "../../lib/planDraft";
 
 const problems = [
   "I have too many things to do",
@@ -47,17 +55,6 @@ const colors = [
   "#8be0c4",
 ];
 const example = "Revise Physics, finish my project, and go for a workout";
-function draftTasks(text: string) {
-  return text
-    .split(/[,;\n]+|\band\b/i)
-    .map((t) => t.trim().replace(/^(and|then)\s+/i, ""))
-    .filter(Boolean)
-    .slice(0, 5)
-    .map((title, i) => ({
-      title: title.charAt(0).toUpperCase() + title.slice(1),
-      minutes: [45, 60, 30, 25, 30][i],
-    }));
-}
 function Reveal({
   children,
   className = "",
@@ -85,19 +82,19 @@ function PlanDemo({
   onSave,
   compact = false,
 }: {
-  onSave: (text: string) => void;
+  onSave: (draft: PlanDraft) => void;
   compact?: boolean;
 }) {
   const [step, setStep] = useState(compact ? 1 : 0);
   const [problem, setProblem] = useState<number | null>(null);
   const [text, setText] = useState("");
-  const [done, setDone] = useState<number[]>([]);
+  const [tasks, setTasks] = useState<DraftTask[]>([]);
   useEffect(() => {
     if (step !== 2) return;
     const timer = window.setTimeout(() => setStep(3), 1100);
     return () => clearTimeout(timer);
   }, [step]);
-  const tasks = draftTasks(text);
+
   return (
     <div className={`lp-demo ${compact ? "lp-demo-wide" : ""}`}>
       <div className="lp-demo-top">
@@ -109,7 +106,7 @@ function PlanDemo({
       <div className="lp-step-line">
         {[0, 1, 3].map((s, i) => (
           <i key={s} className={step >= s ? "active" : ""}>
-            <span>0{i + 1}</span>
+            <span>{["Your challenge", "Your thoughts", "Your plan"][i]}</span>
           </i>
         ))}
       </div>
@@ -130,6 +127,7 @@ function PlanDemo({
                 <br />
                 productivity problem?
               </h2>
+              <p>Pick the one that feels most like today.</p>
               <div className="lp-options">
                 {problems.map((p, i) => (
                   <button
@@ -159,11 +157,14 @@ function PlanDemo({
                 <ChevronLeft size={14} /> Back
               </button>
               <h2>{questions[problem ?? 0]}</h2>
-              <p>No perfect wording needed. Just get it out.</p>
+              <p>One task per line works best. You can edit every task next.</p>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (text.trim()) setStep(2);
+                  if (draftTasks(text).length) {
+                    setTasks(draftTasks(text));
+                    setStep(2);
+                  }
                 }}
               >
                 <label
@@ -187,7 +188,10 @@ function PlanDemo({
                 >
                   Try an example <ArrowUpRight size={13} />
                 </button>
-                <button className="lp-primary lp-full" disabled={!text.trim()}>
+                <button
+                  className="lp-primary lp-full"
+                  disabled={!draftTasks(text).length}
+                >
                   Find my starting point <Sparkles size={16} />
                 </button>
               </form>
@@ -216,53 +220,27 @@ function PlanDemo({
                 Here’s where to start.
               </h2>
               <p>One thing at a time. You’ve got this.</p>
-              <div className="lp-result">
-                {tasks.map((task, i) => (
-                  <motion.button
-                    initial={{ opacity: 0, x: 15 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    key={i}
-                    onClick={() =>
-                      setDone(
-                        done.includes(i)
-                          ? done.filter((n) => n !== i)
-                          : [...done, i],
-                      )
-                    }
-                    aria-pressed={done.includes(i)}
-                    style={{ "--tile": colors[i] } as React.CSSProperties}
-                  >
-                    <span className="lp-task-check">
-                      {done.includes(i) ? <Check size={14} /> : i + 1}
-                    </span>
-                    <strong
-                      style={{
-                        textDecoration: done.includes(i)
-                          ? "line-through"
-                          : "none",
-                      }}
-                    >
-                      {task.title}
-                    </strong>
-                    <small>{task.minutes}m</small>
-                  </motion.button>
-                ))}
-              </div>
+              <PlanEditor tasks={tasks} onChange={setTasks} />
               <small className="lp-disclosure">
                 Local sample · suggested estimates, not an AI-generated
                 schedule.
               </small>
               <button
                 className="lp-primary lp-full"
-                onClick={() => onSave(text)}
+                disabled={!validDraft(tasks)}
+                onClick={() =>
+                  onSave({
+                    version: 1,
+                    problem: problem === null ? "" : problems[problem],
+                    tasks,
+                  })
+                }
               >
                 Save my plan <ArrowRight size={17} />
               </button>
               <button
                 className="lp-back"
                 onClick={() => {
-                  setDone([]);
                   setStep(1);
                 }}
               >
@@ -295,10 +273,16 @@ export const LandingPage: React.FC = () => {
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
     setMenu(false);
   };
-  const save = (text: string) => {
+  const save = (draft: PlanDraft) => {
     try {
-      localStorage.setItem("planny_landing_draft", text);
-    } catch {}
+      savePlanDraft(draft);
+    } catch {
+      setStatus(
+        "Your browser could not save this preview. You can add tasks after signup.",
+      );
+      setMode("signup");
+      return;
+    }
     setMode("signup");
     setStatus(null);
   };
@@ -865,7 +849,13 @@ export const LandingPage: React.FC = () => {
                   <p>{description}</p>
                   <button
                     className="lp-text-button"
-                    onClick={() => save(prompt)}
+                    onClick={() =>
+                      save({
+                        version: 1,
+                        problem: label,
+                        tasks: draftTasks(prompt),
+                      })
+                    }
                   >
                     Start with this plan <ArrowUpRight size={16} />
                   </button>
@@ -888,7 +878,7 @@ export const LandingPage: React.FC = () => {
               {[
                 [
                   "Do I have to sign up to try Planny?",
-                  "No. The planning previews on this page work without an account. Create an account when you want your own workspace. The thoughts you enter in the preview are carried into your first-task setup on this device.",
+                  "No. The planning previews on this page work without an account. Create an account when you want your own workspace. Your edited tasks and time estimates are carried into onboarding on this device, where you review them before saving.",
                 ],
                 [
                   "Is the homepage demo using AI?",

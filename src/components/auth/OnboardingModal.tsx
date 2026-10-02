@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { syncEngine } from "../../lib/sync";
@@ -7,6 +7,18 @@ import {
   loadAssistantMemory,
   saveAssistantMemory,
 } from "../../lib/assistantMemory";
+import { PlanEditor } from "./PlanEditor";
+import {
+  readPlanDraft,
+  clearPlanDraft,
+  validDraft,
+  type DraftTask,
+} from "../../lib/planDraft";
+import {
+  readOnboardingProgress,
+  saveOnboardingProgress,
+  clearOnboardingProgress,
+} from "../../lib/onboardingProgress";
 import type { AIMessage } from "../../types/database";
 
 const PERSONAS = [
@@ -52,23 +64,71 @@ export const OnboardingModal: React.FC<{
   onComplete: () => void;
 }> = ({ isOpen, onComplete }) => {
   const { user, profile, completeOnboarding } = useAuth();
-  const [step, setStep] = useState(0),
+  const [saved] = useState(() => readOnboardingProgress(user?.id || ""));
+  const [welcomeId] = useState(() => saved.welcomeId || crypto.randomUUID());
+  const screen = useRef<HTMLDivElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const [progressSaved, setProgressSaved] = useState(true);
+  const [step, setStep] = useState(saved.step || 0),
     [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState(profile?.full_name || ""),
-    [persona, setPersona] = useState("Student");
-  const [wastedHours, setWastedHours] = useState("1–2 hours"),
-    [taskSystem, setTaskSystem] = useState("Mostly in my head");
-  const [blockers, setBlockers] = useState<string[]>([]),
-    [planningStyle, setPlanningStyle] = useState("🔄 A mix of everything");
-  const [taskBehavior, setTaskBehavior] = useState("Do all of the above"),
-    [firstTask, setFirstTask] = useState(() => {
-      try {
-        return localStorage.getItem("planny_landing_draft") || "";
-      } catch {
-        return "";
-      }
-    });
+  const [name, setName] = useState(saved.name ?? profile?.full_name ?? ""),
+    [persona, setPersona] = useState(saved.persona || "Student");
+  const [wastedHours, setWastedHours] = useState(
+      saved.wastedHours || "1–2 hours",
+    ),
+    [taskSystem, setTaskSystem] = useState(
+      saved.taskSystem || "Mostly in my head",
+    );
+  const [blockers, setBlockers] = useState<string[]>(saved.blockers || []),
+    [planningStyle, setPlanningStyle] = useState(
+      saved.planningStyle || "🔄 A mix of everything",
+    );
+  const [taskBehavior, setTaskBehavior] = useState(
+    saved.taskBehavior || "Do all of the above",
+  );
+  const [draft] = useState(readPlanDraft);
+  const [planTasks, setPlanTasks] = useState<DraftTask[]>(
+    () =>
+      saved.planTasks ||
+      draft?.tasks || [{ id: crypto.randomUUID(), title: "", minutes: 30 }],
+  );
+  const finishing = useRef(false);
+  useEffect(() => {
+    if (!user || !isOpen || saving) return;
+    setProgressSaved(
+      saveOnboardingProgress(user.id, {
+        step,
+        name,
+        persona,
+        wastedHours,
+        taskSystem,
+        blockers,
+        planningStyle,
+        taskBehavior,
+        planTasks,
+        welcomeId,
+      }),
+    );
+  }, [
+    user?.id,
+    isOpen,
+    saving,
+    step,
+    name,
+    persona,
+    wastedHours,
+    taskSystem,
+    blockers,
+    planningStyle,
+    taskBehavior,
+    planTasks,
+    welcomeId,
+  ]);
+  useEffect(() => {
+    screen.current?.scrollTo({ top: 0 });
+    heading.current?.focus({ preventScroll: true });
+  }, [step]);
   if (!isOpen || !user) return null;
 
   const choice = (
@@ -78,6 +138,7 @@ export const OnboardingModal: React.FC<{
   ) => (
     <button
       type="button"
+      aria-pressed={selected === value}
       key={value}
       onClick={() => setter(value)}
       className={`onboarding-choice ${selected === value ? "selected" : ""}`}
@@ -87,6 +148,8 @@ export const OnboardingModal: React.FC<{
     </button>
   );
   const finish = async () => {
+    if (finishing.current) return;
+    finishing.current = true;
     setSaving(true);
     setError(null);
     try {
@@ -94,39 +157,36 @@ export const OnboardingModal: React.FC<{
         persona === "Student"
           ? ["Study", "Personal", "Projects"]
           : ["Work", "Personal", "Projects"];
-      await completeOnboarding({
-        fullName: name,
-        areas,
-        persona,
-        wastedHours,
-        taskSystem,
-        blockers,
-        planningStyle,
-        taskBehavior,
-      });
-      if (firstTask.trim())
+      // Stable draft IDs make retries update the same tasks instead of duplicating them.
+      for (const task of planTasks.filter((t) => t.title.trim())) {
+        if (!validDraft([task]))
+          throw new Error(
+            "Give each task a title and an estimate between 5 and 480 minutes.",
+          );
+        const existing = syncEngine.getTasks().find((t) => t.id === task.id);
         syncEngine.saveTask({
-          id: crypto.randomUUID(),
+          id: task.id,
           user_id: user.id,
           project_id: null,
-          title: firstTask.trim(),
-          description: "Your first task in Planny",
+          title: task.title.trim(),
+          description: "From your Planny starting plan",
           priority: "medium",
           status: "todo",
           start_date: localDate(),
           deadline: null,
-          estimated_duration_minutes: 30,
+          estimated_duration_minutes: task.minutes,
           recurrence_rule: null,
           is_routine: false,
           is_brain_dump: false,
-          position: 0,
+          position: planTasks.indexOf(task),
           completed_at: null,
-          created_at: new Date().toISOString(),
+          created_at: existing?.created_at || new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
+      }
       const memory = await loadAssistantMemory(user.id);
       const welcome: AIMessage = {
-        id: crypto.randomUUID(),
+        id: welcomeId,
         conversation_id: memory.conversationId,
         user_id: user.id,
         role: "assistant",
@@ -138,18 +198,34 @@ export const OnboardingModal: React.FC<{
         facts: [
           ...memory.facts,
           `${name} is a ${persona}`,
+          `Main challenge: ${draft?.problem || blockers.join(", ") || "not specified"}`,
+          `Productivity blockers: ${blockers.join(", ") || "not specified"}`,
           `Planning preference: ${planningStyle}`,
           `Default task behavior: ${taskBehavior}`,
         ].slice(-12),
-        messages: [...memory.messages, welcome],
+        messages: [
+          ...memory.messages.filter((m) => m.id !== welcomeId),
+          welcome,
+        ],
       });
-      try {
-        localStorage.removeItem("planny_landing_draft");
-      } catch {}
+      // Mark setup complete only after the tasks and walkthrough are prepared.
+      await completeOnboarding({
+        fullName: name.trim(),
+        areas,
+        persona,
+        wastedHours,
+        taskSystem,
+        blockers,
+        planningStyle,
+        taskBehavior,
+      });
+      clearPlanDraft();
+      clearOnboardingProgress(user.id);
       onComplete();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not finish setup.");
     } finally {
+      finishing.current = false;
       setSaving(false);
     }
   };
@@ -160,117 +236,151 @@ export const OnboardingModal: React.FC<{
     "Let’s make your first win",
   ];
   return (
-    <div className="onboarding-screen">
+    <div className="onboarding-screen" ref={screen}>
       <header>
         <div className="landing-logo">
           <img src="/planny-icon.svg" alt="" />
           <span>Planny</span>
         </div>
-        <span>{step + 1} / 4</span>
+        <span>
+          {
+            [
+              "About you",
+              "Your challenges",
+              "Your preferences",
+              "Your first plan",
+            ][step]
+          }{" "}
+          · {step + 1} / 4
+        </span>
       </header>
       <div className="onboarding-progress">
         <i style={{ width: `${(step + 1) * 25}%` }} />
       </div>
       <section className="onboarding-panel">
         <span className="onboarding-kicker">
-          <Sparkles size={14} /> 60-second setup
+          <Sparkles size={14} /> A little about you
         </span>
-        <h1>{titles[step]}</h1>
-        {step === 0 && (
-          <div className="onboarding-stack">
-            <label>
-              What should we call you?
-              <input
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-              />
-            </label>
-            <p>Which sounds most like you?</p>
-            <div className="onboarding-grid">
-              {PERSONAS.map((v) => choice(v, persona, setPersona))}
+        <h1 ref={heading} tabIndex={-1}>
+          {titles[step]}
+        </h1>
+        <p className="onboarding-save-note">
+          {progressSaved
+            ? "Your progress is saved on this device. Pick up where you left off."
+            : "This browser can’t save progress. Keep this tab open until you finish."}
+        </p>
+        <fieldset disabled={saving} className="onboarding-fields">
+          {step === 0 && (
+            <div className="onboarding-stack">
+              <label>
+                What should we call you?
+                <input
+                  autoComplete="given-name"
+                  maxLength={80}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                />
+              </label>
+              <p>Which sounds most like you?</p>
+              <div className="onboarding-grid">
+                {PERSONAS.map((v) => choice(v, persona, setPersona))}
+              </div>
+              <label>
+                Roughly how much time slips away each day?
+                <select
+                  value={wastedHours}
+                  onChange={(e) => setWastedHours(e.target.value)}
+                >
+                  <option>Less than 1 hour</option>
+                  <option>1–2 hours</option>
+                  <option>2–4 hours</option>
+                  <option>More than 4 hours</option>
+                </select>
+              </label>
             </div>
-            <label>
-              Roughly how much time slips away each day?
-              <select
-                value={wastedHours}
-                onChange={(e) => setWastedHours(e.target.value)}
-              >
-                <option>Less than 1 hour</option>
-                <option>1–2 hours</option>
-                <option>2–4 hours</option>
-                <option>More than 4 hours</option>
-              </select>
-            </label>
-          </div>
-        )}
-        {step === 1 && (
-          <div className="onboarding-stack">
-            <p>How do you currently manage tasks?</p>
-            <div className="onboarding-grid">
-              {SYSTEMS.map((v) => choice(v, taskSystem, setTaskSystem))}
+          )}
+          {step === 1 && (
+            <div className="onboarding-stack">
+              <p>How do you currently manage tasks?</p>
+              <div className="onboarding-grid">
+                {SYSTEMS.map((v) => choice(v, taskSystem, setTaskSystem))}
+              </div>
+              <p>
+                What usually stops you? <small>Choose up to three</small>
+              </p>
+              <div className="onboarding-grid blockers">
+                {BLOCKERS.map((v) => (
+                  <button
+                    type="button"
+                    key={v}
+                    aria-pressed={blockers.includes(v)}
+                    disabled={!blockers.includes(v) && blockers.length >= 3}
+                    className={`onboarding-choice ${blockers.includes(v) ? "selected" : ""}`}
+                    onClick={() =>
+                      setBlockers(
+                        blockers.includes(v)
+                          ? blockers.filter((b) => b !== v)
+                          : blockers.length < 3
+                            ? [...blockers, v]
+                            : blockers,
+                      )
+                    }
+                  >
+                    {v}
+                    {blockers.includes(v) && <Check size={15} />}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p>
-              What usually stops you? <small>Choose up to three</small>
-            </p>
-            <div className="onboarding-grid blockers">
-              {BLOCKERS.map((v) => (
+          )}
+          {step === 2 && (
+            <div className="onboarding-stack">
+              <p>How do you like to plan your day?</p>
+              {STYLES.map((v) => choice(v, planningStyle, setPlanningStyle))}
+              <p>When you give Planny a task, what should it do?</p>
+              <div className="onboarding-grid">
+                {BEHAVIORS.map((v) => choice(v, taskBehavior, setTaskBehavior))}
+              </div>
+            </div>
+          )}
+          {step === 3 && (
+            <div className="onboarding-stack first-task">
+              <div className="first-task-demo">
+                <span>YOUR STARTING PLAN</span>
+                <strong>
+                  {draft
+                    ? "Your plan came with you."
+                    : "Start with one small win."}
+                </strong>
+                <p>
+                  Review the titles and estimates. These become individual tasks
+                  in Today when you enter your workspace.
+                </p>
+              </div>
+              <PlanEditor tasks={planTasks} onChange={setPlanTasks} />
+              {planTasks.length > 0 && (
                 <button
                   type="button"
-                  key={v}
-                  className={`onboarding-choice ${blockers.includes(v) ? "selected" : ""}`}
-                  onClick={() =>
-                    setBlockers(
-                      blockers.includes(v)
-                        ? blockers.filter((b) => b !== v)
-                        : blockers.length < 3
-                          ? [...blockers, v]
-                          : blockers,
-                    )
-                  }
+                  className="onboarding-back"
+                  onClick={() => setPlanTasks([])}
                 >
-                  {v}
-                  {blockers.includes(v) && <Check size={15} />}
+                  Skip tasks for now — start with an empty workspace
                 </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {step === 2 && (
-          <div className="onboarding-stack">
-            <p>How do you like to plan your day?</p>
-            {STYLES.map((v) => choice(v, planningStyle, setPlanningStyle))}
-            <p>When you give Planny a task, what should it do?</p>
-            <div className="onboarding-grid">
-              {BEHAVIORS.map((v) => choice(v, taskBehavior, setTaskBehavior))}
-            </div>
-          </div>
-        )}
-        {step === 3 && (
-          <div className="onboarding-stack first-task">
-            <div className="first-task-demo">
-              <span>TRY A REAL TASK</span>
-              <strong>“Finish my Physics assignment”</strong>
-              <p>
-                Planny can estimate it, split it into steps and help find the
-                right time.
+              )}
+              {planTasks.some((t) => !validDraft([t])) && (
+                <p role="status" className="onboarding-hint">
+                  Add a title and a 5–480 minute estimate for each task, or skip
+                  for now.
+                </p>
+              )}
+              <p className="onboarding-hint">
+                Next, meet your assistant for a quick tour. Your tasks will be
+                in Today.
               </p>
             </div>
-            <label>
-              What’s one thing you want to get done?
-              <input
-                autoFocus
-                value={firstTask}
-                onChange={(e) => setFirstTask(e.target.value)}
-                placeholder="Type your first task…"
-              />
-            </label>
-            <p className="onboarding-hint">
-              You can skip this and add one later.
-            </p>
-          </div>
-        )}
+          )}
+        </fieldset>
         {error && (
           <p className="landing-status" role="alert">
             {error}
@@ -279,6 +389,7 @@ export const OnboardingModal: React.FC<{
         <footer>
           {step > 0 ? (
             <button
+              disabled={saving}
               className="onboarding-back"
               onClick={() => setStep(step - 1)}
             >
@@ -289,7 +400,11 @@ export const OnboardingModal: React.FC<{
           )}
           <button
             className="landing-submit"
-            disabled={saving || (step === 0 && !name.trim())}
+            disabled={
+              saving ||
+              (step === 0 && !name.trim()) ||
+              (step === 3 && planTasks.some((t) => !validDraft([t])))
+            }
             onClick={() => (step < 3 ? setStep(step + 1) : void finish())}
           >
             {saving

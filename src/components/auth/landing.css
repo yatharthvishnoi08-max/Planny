@@ -1401,3 +1401,50 @@ html:has(.lp-auth-backdrop) {
     gap: 30px;
   }
 }
+
+.lp-step-line {
+  padding-bottom: 26px;
+  gap: 12px;
+}
+.lp-step-line i {
+  transition: background 0.2s;
+}
+.lp-step-line span {
+  display: block;
+  position: absolute;
+  top: 9px;
+  left: 0;
+  font-size: 9px;
+  font-style: normal;
+  color: #7f8e73;
+  white-space: nowrap;
+}
+.lp-step-line .active span {
+  color: #c7e4a9;
+}
+.lp-options {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.lp-options button {
+  min-height: 66px;
+  border-color: #ffffff12;
+  background: #0b110a66;
+  line-height: 1.5;
+  padding: 11px;
+  align-items: flex-start;
+}
+.lp-options .lp-radio {
+  margin-top: 2px;
+}
+.lp-options button[aria-pressed="true"] {
+  box-shadow: 0 0 0 1px #b6f36b20;
+}
+@media (max-width: 400px) {
+  .lp-options {
+    grid-template-columns: 1fr;
+  }
+  .lp-options button {
+    min-height: 44px;
+  }
+}
