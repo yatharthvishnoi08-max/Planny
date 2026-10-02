@@ -375,6 +375,7 @@ export const App: React.FC = () => {
           setCurrentTab("today");
           setPlanDayRequest((value) => value + 1);
         }}
+        onStartFocus={setFocusTask}
         onNavigateTab={(tab, id) => {
           setSearchTarget(id);
           setCurrentTab(tab);

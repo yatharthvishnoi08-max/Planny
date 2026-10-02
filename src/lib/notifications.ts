@@ -90,7 +90,10 @@ export async function sendNotification(
 
 // Desktop/web timers are rebuilt from persisted tasks whenever the app opens.
 // Mobile uses the OS scheduler so alerts can survive app closure.
-const schedules = new Map<string, { title: string; at: number }>();
+const schedules = new Map<
+  string,
+  { title: string; body: string; at: number }
+>();
 let mobileRevision = 0;
 let mobileWork: Promise<void> = Promise.resolve();
 let mobileSignature = "";
@@ -103,6 +106,7 @@ export function scheduleTaskNotification(
   id: string,
   title: string,
   remindAt: Date,
+  body = `You planned ${title}. Open Planny when you're ready to begin.`,
 ) {
   const at = remindAt.getTime();
   if (!Number.isFinite(at) || at <= Date.now()) {
@@ -110,9 +114,9 @@ export function scheduleTaskNotification(
     return;
   }
   const old = schedules.get(id);
-  if (old?.at === at && old.title === title) return;
+  if (old?.at === at && old.title === title && old.body === body) return;
   cancelTaskNotification(id);
-  schedules.set(id, { title, at });
+  schedules.set(id, { title, body, at });
   const arm = () => {
     const remaining = at - Date.now();
     if (remaining > 0) {
@@ -123,7 +127,7 @@ export function scheduleTaskNotification(
     } else {
       activeNotificationTimers.delete(id);
       schedules.delete(id);
-      void sendNotification("Planny reminder", `Time for: ${title}`, id);
+      void sendNotification("Ready when you are", body, id);
     }
   };
   arm();
@@ -140,7 +144,10 @@ export function reconcileNotifications(
   instances: RoutineInstance[],
   userId: string | null,
 ) {
-  const desired = new Map<string, { title: string; at: number }>();
+  const desired = new Map<
+    string,
+    { title: string; body: string; at: number }
+  >();
   if (userId) {
     let preference = "at_time";
     let startOfDay = "08:00";
@@ -162,6 +169,7 @@ export function reconcileNotifications(
       if (at > Date.now())
         desired.set(`briefing:${userId}:${localDate()}`, {
           title: "Your daily briefing is ready in Planny",
+          body: "See what matters today and choose your first focus block.",
           at,
         });
     }
@@ -172,7 +180,19 @@ export function reconcileNotifications(
         task.deadline
       ) {
         const at = new Date(task.deadline).getTime() - offsetMs;
-        if (at > Date.now()) desired.set(task.id, { title: task.title, at });
+        if (at > Date.now()) {
+          const deadline = new Date(task.deadline);
+          const plannedTime = deadline.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit",
+          });
+          const duration = task.estimated_duration_minutes || 30;
+          desired.set(task.id, {
+            title: task.title,
+            body: `You planned ${task.title} for ${plannedTime}. You estimated ${duration} minutes.`,
+            at,
+          });
+        }
       }
     // Queue the next week; refreshed whenever the workspace is active.
     for (
@@ -197,7 +217,11 @@ export function reconcileNotifications(
           const at =
             new Date(`${date}T${routine.time_of_day}:00`).getTime() - offsetMs;
           if (at > Date.now())
-            desired.set(`${routine.id}:${date}`, { title: routine.title, at });
+            desired.set(`${routine.id}:${date}`, {
+              title: routine.title,
+              body: `${routine.title} is part of your routine at ${routine.time_of_day}. Start when you're ready.`,
+              at,
+            });
         }
     }
   }
@@ -220,8 +244,8 @@ export function reconcileNotifications(
           .slice(0, 60)) {
           plugin.sendNotification({
             id: numberId(key),
-            title: "Planny reminder",
-            body: `Time for: ${item.title}`,
+            title: item.title,
+            body: item.body,
             schedule: plugin.Schedule.at(new Date(item.at)),
           });
         }
@@ -235,5 +259,5 @@ export function reconcileNotifications(
   for (const key of schedules.keys())
     if (!desired.has(key)) cancelTaskNotification(key);
   for (const [key, item] of desired)
-    scheduleTaskNotification(key, item.title, new Date(item.at));
+    scheduleTaskNotification(key, item.title, new Date(item.at), item.body);
 }

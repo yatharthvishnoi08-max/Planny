@@ -12,9 +12,13 @@ import {
   Sparkles,
   CalendarDays,
   Timer,
+  Play,
+  LayoutDashboard,
+  Brain,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { Task, Project, Note, Resource, BrainDump } from "../../types/database";
+import { recommendNextTask } from "../../lib/dayPlanner";
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -23,6 +27,7 @@ interface GlobalSearchModalProps {
   onNavigateTab?: (tab: any, itemId?: string) => void;
   onCreateTask?: () => void;
   onPlanDay?: () => void;
+  onStartFocus?: (task: Task) => void;
 }
 
 export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
@@ -32,6 +37,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onNavigateTab,
   onCreateTask,
   onPlanDay,
+  onStartFocus,
 }) => {
   const resultsRef = useRef<HTMLDivElement>(null);
   const moveResult = (e: React.KeyboardEvent) => {
@@ -111,6 +117,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     filteredNotes.length +
     filteredResources.length +
     filteredBrainDumps.length;
+  const recommendedTask = recommendNextTask(
+    tasks,
+    syncEngine.getFocusSessions(),
+  );
 
   return (
     <div
@@ -182,6 +192,23 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   </span>
                 </button>
                 <button
+                  disabled={!recommendedTask}
+                  onClick={() => {
+                    if (recommendedTask) onStartFocus?.(recommendedTask);
+                    onClose();
+                  }}
+                >
+                  <Play size={15} />
+                  <span>
+                    <strong>Start focus</strong>
+                    <small>
+                      {recommendedTask
+                        ? recommendedTask.title
+                        : "No pending task to start"}
+                    </small>
+                  </span>
+                </button>
+                <button
                   onClick={() => {
                     onNavigateTab?.("calendar");
                     onClose();
@@ -203,6 +230,30 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   <span>
                     <strong>Focus insights</strong>
                     <small>Review your focused time</small>
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    onNavigateTab?.("today");
+                    onClose();
+                  }}
+                >
+                  <LayoutDashboard size={15} />
+                  <span>
+                    <strong>Open Today</strong>
+                    <small>Return to your command center</small>
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    onNavigateTab?.("brain-dump");
+                    onClose();
+                  }}
+                >
+                  <Brain size={15} />
+                  <span>
+                    <strong>Brain dump</strong>
+                    <small>Capture everything on your mind</small>
                   </span>
                 </button>
               </div>
