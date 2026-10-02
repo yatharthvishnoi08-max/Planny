@@ -11,7 +11,6 @@ import {
   Clock,
   CheckCircle2,
   MoreHorizontal,
-  X,
   Zap,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
@@ -43,13 +42,7 @@ export function TodayView({
   onOpenAITaskModal,
   onOpenBriefing,
   onOpenDayReview,
-  onPlan,
 }: TodayViewProps) {
-  const [showRoadmap, setShowRoadmap] = useState(
-    () =>
-      localStorage.getItem(`planny_roadmap:${syncEngine.getUserId()}`) !==
-      "hidden",
-  );
   const [filter, setFilter] = useState<"all" | "open" | "completed">("all");
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
@@ -172,63 +165,6 @@ export function TodayView({
           New task
         </button>
       </header>
-      {showRoadmap && (
-        <section className="day-roadmap" aria-label="Getting started">
-          <div className="roadmap-top">
-            <span>NEW HERE? HERE’S THE FLOW.</span>
-            <button
-              aria-label="Dismiss getting started"
-              onClick={() => {
-                setShowRoadmap(false);
-                localStorage.setItem(
-                  `planny_roadmap:${syncEngine.getUserId()}`,
-                  "hidden",
-                );
-              }}
-            >
-              <X size={15} />
-            </button>
-          </div>
-          <div className="roadmap-steps">
-            <button onClick={onOpenAITaskModal}>
-              <b>01</b>
-              <span>
-                <strong>Capture</strong>
-                <small>Add what’s on your mind</small>
-              </span>
-              <ArrowUpRight size={17} />
-            </button>
-            <button onClick={onPlan}>
-              <b>02</b>
-              <span>
-                <strong>Plan</strong>
-                <small>Give it a deadline</small>
-              </span>
-              <ArrowUpRight size={17} />
-            </button>
-            <button
-              onClick={() =>
-                pending[0] ? onStartFocus(pending[0]) : onOpenAITaskModal()
-              }
-            >
-              <b>03</b>
-              <span>
-                <strong>Focus</strong>
-                <small>One task. One session.</small>
-              </span>
-              <ArrowUpRight size={17} />
-            </button>
-            <button onClick={onOpenDayReview}>
-              <b>04</b>
-              <span>
-                <strong>Review</strong>
-                <small>See what you got done</small>
-              </span>
-              <ArrowUpRight size={17} />
-            </button>
-          </div>
-        </section>
-      )}
       <div className="today-toolbar">
         <div className="task-tabs" aria-label="Task filter">
           {(
