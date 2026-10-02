@@ -500,6 +500,7 @@ export function TodayView({
         sessions={focusSessions}
         endOfDay={endOfDay}
         existingPlan={currentPlan}
+        onAddTask={onOpenAITaskModal}
       />
     </div>
   );

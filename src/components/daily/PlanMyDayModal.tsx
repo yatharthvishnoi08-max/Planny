@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   ArrowRight,
   CalendarCheck,
+  Plus,
   RefreshCw,
   Sparkles,
   X,
@@ -14,7 +15,7 @@ import type {
   Task,
 } from "../../types/database";
 import { buildDayPlan, type PlanBlock } from "../../lib/dayPlanner";
-import { localDate } from "../../lib/dates";
+import { isPending, localDate } from "../../lib/dates";
 import { syncEngine } from "../../lib/sync";
 
 export function readPlanBlocks(plan?: DailyPlan): PlanBlock[] {
@@ -35,6 +36,7 @@ export function PlanMyDayModal({
   sessions,
   endOfDay,
   existingPlan,
+  onAddTask,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -43,6 +45,7 @@ export function PlanMyDayModal({
   sessions: FocusSession[];
   endOfDay: string;
   existingPlan?: DailyPlan;
+  onAddTask: () => void;
 }) {
   const [variant, setVariant] = useState(0);
   const [startTime, setStartTime] = useState(() =>
@@ -69,7 +72,16 @@ export function PlanMyDayModal({
   );
   if (!isOpen) return null;
 
+  const pendingCount = tasks.filter(isPending).length;
+  const emptyTitle = pendingCount
+    ? "No task fits this window."
+    : "Nothing needs planning yet.";
+  const emptyCopy = pendingCount
+    ? `Your unfinished tasks do not fit between ${startTime} and ${endOfDay}. Choose an earlier start time or shorten a task estimate.`
+    : "Add your first task, then Planny can turn it into a realistic schedule.";
+
   const accept = () => {
+    if (!blocks.length) return;
     const current = existingPlan;
     const timestamp = new Date().toISOString();
     syncEngine.saveDailyPlan({
@@ -159,10 +171,19 @@ export function PlanMyDayModal({
           ) : (
             <div className="plan-day-empty">
               <CalendarCheck size={24} />
-              <strong>Your day is clear.</strong>
-              <span>
-                Add a task or move the start time earlier to build a plan.
-              </span>
+              <strong>{emptyTitle}</strong>
+              <span>{emptyCopy}</span>
+              {!pendingCount && (
+                <button
+                  className="secondary-button"
+                  onClick={() => {
+                    onClose();
+                    onAddTask();
+                  }}
+                >
+                  <Plus size={14} /> Add a task
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -191,6 +212,11 @@ export function PlanMyDayModal({
             className="primary-button"
             onClick={accept}
             disabled={!blocks.length || accepted}
+            title={
+              !blocks.length
+                ? "Add at least one task to create a plan"
+                : undefined
+            }
           >
             {accepted ? "Plan accepted" : "Accept plan"}
             <ArrowRight size={15} />
