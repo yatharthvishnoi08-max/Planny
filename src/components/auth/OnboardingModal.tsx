@@ -19,7 +19,7 @@ export const OnboardingModal: React.FC<{ isOpen: boolean; onComplete: () => void
   const [name, setName] = useState(profile?.full_name || ""), [persona, setPersona] = useState("Student");
   const [wastedHours, setWastedHours] = useState("1–2 hours"), [taskSystem, setTaskSystem] = useState("Mostly in my head");
   const [blockers, setBlockers] = useState<string[]>([]), [planningStyle, setPlanningStyle] = useState("🔄 A mix of everything");
-  const [taskBehavior, setTaskBehavior] = useState("Do all of the above"), [firstTask, setFirstTask] = useState("");
+  const [taskBehavior, setTaskBehavior] = useState("Do all of the above"), [firstTask, setFirstTask] = useState(() => { try { return localStorage.getItem("planny_landing_draft") || ""; } catch { return ""; } });
   if (!isOpen || !user) return null;
 
   const choice = (value: string, selected: string, setter: (value: string) => void) => <button type="button" key={value} onClick={() => setter(value)} className={`onboarding-choice ${selected === value ? "selected" : ""}`}><span>{value}</span>{selected === value && <Check size={16} />}</button>;
@@ -32,6 +32,7 @@ export const OnboardingModal: React.FC<{ isOpen: boolean; onComplete: () => void
       const memory = await loadAssistantMemory(user.id);
       const welcome: AIMessage = { id: crypto.randomUUID(), conversation_id: memory.conversationId, user_id: user.id, role: "assistant", content: `You’re set, ${name.split(" ")[0] || "friend"}. Here’s your quick tour:\n\n• **Today** is your daily command center.\n• **Upcoming** and **Calendar** show what’s ahead.\n• **Projects** group bigger goals.\n• **Routines** keep repeat work consistent.\n• **Brain dump** catches messy thoughts fast.\n• **Notes & links** keeps useful knowledge nearby.\n• **Focus** helps you finish one thing at a time.\n\nI’ll remember your preferences and our conversations. Tell me what you want to accomplish next—or ask me what to do now.`, created_at: new Date().toISOString() };
       await saveAssistantMemory(user.id, { ...memory, facts: [...memory.facts, `${name} is a ${persona}`, `Planning preference: ${planningStyle}`, `Default task behavior: ${taskBehavior}`].slice(-12), messages: [...memory.messages, welcome] });
+      try { localStorage.removeItem("planny_landing_draft"); } catch {}
       onComplete();
     } catch (err) { setError(err instanceof Error ? err.message : "Could not finish setup."); } finally { setSaving(false); }
   };
