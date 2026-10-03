@@ -135,7 +135,7 @@ export function AppLayout({
     </button>
   );
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-view={currentTab}>
       <aside className="shell-sidebar" data-active={currentTab}>
         <div className="sidebar-aurora" aria-hidden="true">
           <i />
