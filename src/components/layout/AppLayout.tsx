@@ -63,6 +63,9 @@ export function AppLayout({
   children,
 }: AppLayoutProps) {
   const { profile } = useAuth();
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0] || "there";
+  const hour = new Date().getHours();
+  const dayGreeting = hour < 12 ? "Morning" : hour < 17 ? "Afternoon" : "Evening";
   const [guide, setGuide] = useState(false);
   const [more, setMore] = useState(false);
   const [style, setStyle] = useState(
@@ -155,7 +158,7 @@ export function AppLayout({
                 ✳
               </span>
             </strong>
-            <small>Your day, in flow</small>
+            <small>{dayGreeting}, {firstName}</small>
           </span>
         </button>
         <button className="shell-capture" onClick={onOpenQuickAdd}>
@@ -169,7 +172,7 @@ export function AppLayout({
           <kbd>N</kbd>
         </button>
         <span className="nav-section-title">
-          <b>WORK</b>
+          <b>Plan</b>
           <i />
         </span>
         <nav aria-label="Workspace" className="shell-nav-group">
@@ -181,7 +184,7 @@ export function AppLayout({
         </nav>
         <div className="shell-divider" />
         <span className="nav-section-title">
-          <b>ORGANIZE</b>
+          <b>Keep</b>
           <i />
         </span>
         <nav aria-label="Personal" className="shell-nav-group">
@@ -193,7 +196,7 @@ export function AppLayout({
         </nav>
         <div className="shell-divider" />
         <span className="nav-section-title">
-          <b>THINK</b>
+          <b>Think</b>
           <i />
         </span>
         <nav aria-label="Tools" className="shell-nav-group">
@@ -203,7 +206,7 @@ export function AppLayout({
         </nav>
         <div className="shell-divider" />
         <span className="nav-section-title">
-          <b>PERSONAL</b>
+          <b>Reflect</b>
           <i />
         </span>
         <nav aria-label="Insights" className="shell-nav-group">
