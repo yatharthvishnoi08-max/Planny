@@ -3,7 +3,10 @@ import {
   AnimatePresence,
   motion,
   MotionConfig,
+  useMotionValue,
   useReducedMotion,
+  useScroll,
+  useSpring,
 } from "framer-motion";
 import {
   ArrowRight,
@@ -69,10 +72,14 @@ function Reveal({
     <motion.section
       id={id}
       className={className}
-      initial={{ opacity: reduce ? 1 : 0, y: reduce ? 0 : 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{
+        opacity: reduce ? 1 : 0,
+        y: reduce ? 0 : 34,
+        filter: reduce ? "blur(0px)" : "blur(8px)",
+      }}
+      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
       viewport={{ once: true, amount: 0.12 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: 0.78, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </motion.section>
@@ -258,6 +265,21 @@ function PlanDemo({
 }
 export const LandingPage: React.FC = () => {
   const { signIn, signUp, resetPassword } = useAuth();
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 110,
+    damping: 26,
+    mass: 0.35,
+  });
+  const demoRotateX = useSpring(useMotionValue(0), {
+    stiffness: 150,
+    damping: 22,
+  });
+  const demoRotateY = useSpring(useMotionValue(0), {
+    stiffness: 150,
+    damping: 22,
+  });
   const [mode, setMode] = useState<"signup" | "login" | null>(null);
   const [status, setStatus] = useState<string | null>(null),
     [busy, setBusy] = useState(false);
@@ -322,6 +344,16 @@ export const LandingPage: React.FC = () => {
   return (
     <MotionConfig reducedMotion="user">
       <div className="lp">
+        <motion.div
+          className="lp-scroll-progress"
+          style={{ scaleX: smoothProgress }}
+          aria-hidden="true"
+        />
+        <div className="lp-ambient" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
         <header className="lp-nav">
           <a className="lp-brand" href="#">
             <img src="/planny-icon.svg" alt="" />
@@ -366,48 +398,121 @@ export const LandingPage: React.FC = () => {
         </header>
         <main>
           <section className="lp-hero">
-            <div className="lp-hero-copy">
-              <span className="lp-eyebrow">
+            <motion.div
+              className="lp-hero-copy"
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.span
+                className="lp-eyebrow"
+                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08, duration: 0.45 }}
+              >
                 <span className="lp-dot" /> LESS MENTAL TABS. MORE REAL LIFE.
-              </span>
-              <h1>
-                Stop keeping
-                <br />
-                your life inside
-                <br />
-                <span>your head.</span>
-                <svg viewBox="0 0 400 22" aria-hidden="true">
-                  <path d="M4 16 Q170 1 390 10 M80 21 Q230 6 370 13" />
-                </svg>
+              </motion.span>
+              <h1 aria-label="Stop keeping your life inside your head.">
+                {["Stop keeping", "your life inside", "your head."].map(
+                  (line, index) => (
+                    <span
+                      className={`lp-title-line ${index === 2 ? "accent" : ""}`}
+                      key={line}
+                      aria-hidden="true"
+                    >
+                      <motion.span
+                        initial={reduceMotion ? false : { y: "112%" }}
+                        animate={{ y: 0 }}
+                        transition={{
+                          delay: 0.14 + index * 0.1,
+                          duration: 0.72,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                      >
+                        {line}
+                      </motion.span>
+                    </span>
+                  ),
+                )}
+                <motion.svg
+                  viewBox="0 0 400 22"
+                  aria-hidden="true"
+                  initial={reduceMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.55 }}
+                >
+                  <motion.path
+                    d="M4 16 Q170 1 390 10 M80 21 Q230 6 370 13"
+                    initial={reduceMotion ? false : { pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ delay: 0.52, duration: 0.9, ease: "easeOut" }}
+                  />
+                </motion.svg>
               </h1>
-              <p>
+              <motion.p
+                initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.48, duration: 0.58 }}
+              >
                 Planny turns your goals, tasks, deadlines and ideas into a
                 simple plan — so you always know what to do next.
-              </p>
-              <div className="lp-hero-note">
+              </motion.p>
+              <motion.div
+                className="lp-hero-note"
+                initial={reduceMotion ? false : { opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.62, duration: 0.5 }}
+              >
                 <span>↳</span> Start with whatever’s on your mind.
                 <br />
                 No account. No perfect plan. Just you.
-              </div>
+              </motion.div>
               <div className="lp-floating-note">
                 <span>✳</span> Room to think.
                 <br />
                 <strong>Space to do.</strong>
               </div>
-            </div>
-            <div id="try-planny">
+            </motion.div>
+            <motion.div
+              id="try-planny"
+              className="lp-hero-demo-wrap"
+              style={
+                reduceMotion
+                  ? undefined
+                  : { rotateX: demoRotateX, rotateY: demoRotateY }
+              }
+              initial={reduceMotion ? false : { opacity: 0, y: 28, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+              onPointerMove={(event) => {
+                if (reduceMotion || event.pointerType === "touch") return;
+                const rect = event.currentTarget.getBoundingClientRect();
+                demoRotateY.set(((event.clientX - rect.left) / rect.width - 0.5) * 4);
+                demoRotateX.set(-((event.clientY - rect.top) / rect.height - 0.5) * 3);
+              }}
+              onPointerLeave={() => {
+                demoRotateX.set(0);
+                demoRotateY.set(0);
+              }}
+            >
               <PlanDemo onSave={save} />
-            </div>
+            </motion.div>
           </section>
           <div className="lp-ribbon">
-            <span>LESS OVERTHINKING</span>
-            <b>✳</b>
-            <span>MORE DOING</span>
-            <b>✳</b>
-            <span>A LITTLE STRUCTURE</span>
-            <b>✳</b>
-            <span>A LOT MORE YOU</span>
-            <b>✳</b>
+            <div className="lp-ribbon-track">
+              {[0, 1].map((copy) => (
+                <div key={copy} aria-hidden={copy === 1}>
+                  <span>LESS OVERTHINKING</span>
+                  <b>✳</b>
+                  <span>MORE DOING</span>
+                  <b>✳</b>
+                  <span>A LITTLE STRUCTURE</span>
+                  <b>✳</b>
+                  <span>A LOT MORE YOU</span>
+                  <b>✳</b>
+                </div>
+              ))}
+            </div>
           </div>
           <Reveal id="product" className="lp-section lp-chaos">
             <div className="lp-section-intro">
