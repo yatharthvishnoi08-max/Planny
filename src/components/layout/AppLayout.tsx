@@ -118,7 +118,7 @@ export function AppLayout({
       <span className="nav-label">{item.label}</span>
       <i className="nav-energy" aria-hidden="true" />
       <span className="nav-arrow" aria-hidden="true">
-        ↗
+        ›
       </span>
     </button>
   );
@@ -146,7 +146,7 @@ export function AppLayout({
                 ✳
               </span>
             </strong>
-            <small>make today happen</small>
+            <small>Your day, in flow</small>
           </span>
         </button>
         <button className="shell-capture" onClick={onOpenQuickAdd}>
@@ -155,7 +155,7 @@ export function AppLayout({
           </span>
           <span className="capture-copy">
             <strong>New task</strong>
-            <small>Capture it fast</small>
+            <small>What’s on your mind?</small>
           </span>
           <kbd>N</kbd>
         </button>
