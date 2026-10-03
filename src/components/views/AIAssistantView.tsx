@@ -1,5 +1,11 @@
-import { localDate, dateAtTime, isPending } from "../../lib/dates";
+import {
+  localDate,
+  dateAtTime,
+  isPending,
+  routineOccursOn,
+} from "../../lib/dates";
 import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import {
   Sparkles,
   Send,
@@ -10,6 +16,10 @@ import {
   Calendar,
   Flame,
   AlertCircle,
+  CheckCircle2,
+  ListTodo,
+  Repeat2,
+  Timer,
 } from "lucide-react";
 import { AIMessage, AIStructuredAction, Priority } from "../../types/database";
 import { processAssistantMessage, isHostedAIAvailable } from "../../lib/ai";
@@ -73,6 +83,39 @@ export const AIAssistantView: React.FC<{
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [thinkingStep, setThinkingStep] = useState(0);
+  const firstName =
+    profile?.full_name?.trim().split(/\s+/)[0] ||
+    user?.email?.split("@")[0] ||
+    "there";
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const openTasks = syncEngine.getTasks().filter(isPending).length;
+  const todayRoutines = syncEngine
+    .getRoutines()
+    .filter((routine) => routineOccursOn(routine));
+  const completedRoutineIds = new Set(
+    syncEngine
+      .getTodayRoutineInstances()
+      .filter((instance) => instance.status === "completed")
+      .map((instance) => instance.routine_id),
+  );
+  const routinesLeft = todayRoutines.filter(
+    (routine) => !completedRoutineIds.has(routine.id),
+  ).length;
+  const focusMinutesToday = Math.round(
+    syncEngine
+      .getFocusSessions()
+      .filter(
+        (session) =>
+          localDate(new Date(session.completed_at)) === localDate(),
+      )
+      .reduce((total, session) => total + session.duration_seconds, 0) / 60,
+  );
+  const planningStyle =
+    typeof profile?.onboarding_data?.planningStyle === "string"
+      ? profile.onboarding_data.planningStyle
+      : null;
   const thinkingLabels = ["Reading the conversation", "Checking your tasks and schedule", "Preparing a useful answer"];
   useEffect(() => {
     if (!isProcessing) { setThinkingStep(0); return; }
@@ -281,20 +324,63 @@ export const AIAssistantView: React.FC<{
 
   return (
     <div className="assistant-page content-page max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10 flex flex-col animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center space-x-3 pb-4 mb-4 border-b border-surface-border shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-          <Sparkles className="w-5 h-5" />
+      <motion.section
+        className="personal-assistant-hero shrink-0"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="assistant-identity">
+          <motion.div
+            className="assistant-orb"
+            initial={{ scale: 0.75, rotate: -8 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 220, damping: 18 }}
+          >
+            <img src="/planny-icon.svg" alt="Planny" />
+            <i aria-hidden="true" />
+          </motion.div>
+          <div>
+            <span>PLANNY · YOUR PERSONAL ASSISTANT</span>
+            <h1>
+              {greeting}, {firstName}<em>.</em>
+            </h1>
+            <p>
+              I know your workspace and can help you choose, plan, and finish
+              what matters today.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-lg font-medium text-foreground">Assistant</h1>
-          <p className="text-xs text-muted-foreground">
-            {isHostedAIAvailable()
-              ? "Planny AI ready · every change needs your confirmation"
-              : "Offline planner active in this development build"}
-          </p>
+        <div className="assistant-context-strip">
+          <div>
+            <ListTodo size={14} />
+            <span>Open tasks</span>
+            <strong>{openTasks}</strong>
+          </div>
+          <div>
+            <Repeat2 size={14} />
+            <span>Routines left</span>
+            <strong>{routinesLeft}</strong>
+          </div>
+          <div>
+            <Timer size={14} />
+            <span>Focused today</span>
+            <strong>{focusMinutesToday}m</strong>
+          </div>
         </div>
-      </div>
+        <div className="assistant-personal-note">
+          {isHostedAIAvailable() ? (
+            <CheckCircle2 size={13} />
+          ) : (
+            <Sparkles size={13} />
+          )}
+          <span>
+            {planningStyle
+              ? `Planning around your preference: ${planningStyle}`
+              : "Your tasks, routines, plans, and recent conversation are in context"}
+          </span>
+        </div>
+      </motion.section>
 
       {error && (
         <p

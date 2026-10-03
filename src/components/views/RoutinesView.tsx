@@ -86,7 +86,8 @@ export const RoutinesView: React.FC<RoutinesViewProps> = ({
             Routines
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Repeat the good stuff. Check off the habits scheduled for today.
+            Each routine is a fresh daily check-in. Missed routines expire at
+            day’s end and never move into tomorrow.
           </p>
         </div>
 
@@ -179,7 +180,7 @@ export const RoutinesView: React.FC<RoutinesViewProps> = ({
                   disabled={!routineOccursOn(r)}
                   title={
                     routineOccursOn(r)
-                      ? "Mark today’s routine"
+                      ? "Marks this routine for today only. It resets tomorrow."
                       : "Not scheduled today"
                   }
                   onClick={() => handleToggleToday(r.id)}
