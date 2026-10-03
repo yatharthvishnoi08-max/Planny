@@ -115,7 +115,8 @@ export function AppLayout({
       <span className="nav-icon">
         <item.icon size={18} strokeWidth={1.8} />
       </span>
-      <span>{item.label}</span>
+      <span className="nav-label">{item.label}</span>
+      <i className="nav-energy" aria-hidden="true" />
       <span className="nav-arrow" aria-hidden="true">
         ↗
       </span>
@@ -123,25 +124,45 @@ export function AppLayout({
   );
   return (
     <div className="app-shell">
-      <aside className="shell-sidebar">
+      <aside className="shell-sidebar" data-active={currentTab}>
+        <div className="sidebar-aurora" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
         <button
           className="shell-brand"
           onClick={() => navigate("today")}
           aria-label="Planny home"
         >
-          <img src="/planny-icon.svg" alt="" />
-          <span>
-            Planny
-            <span className="brand-spark" aria-hidden="true">
-              ✳
-            </span>
+          <span className="brand-mark">
+            <img src="/planny-icon.svg" alt="" />
+            <i aria-hidden="true" />
+          </span>
+          <span className="brand-copy">
+            <strong>
+              Planny
+              <span className="brand-spark" aria-hidden="true">
+                ✳
+              </span>
+            </strong>
+            <small>make today happen</small>
           </span>
         </button>
         <button className="shell-capture" onClick={onOpenQuickAdd}>
-          <Plus size={16} />
-          <span>New task</span>
+          <span className="capture-icon">
+            <Plus size={17} />
+          </span>
+          <span className="capture-copy">
+            <strong>New task</strong>
+            <small>Capture it fast</small>
+          </span>
+          <kbd>N</kbd>
         </button>
-        <span className="nav-section-title">WORK</span>
+        <span className="nav-section-title">
+          <b>WORK</b>
+          <i />
+        </span>
         <nav aria-label="Workspace" className="shell-nav-group">
           {navigation
             .filter((item) =>
@@ -150,7 +171,10 @@ export function AppLayout({
             .map(renderNav)}
         </nav>
         <div className="shell-divider" />
-        <span className="nav-section-title">ORGANIZE</span>
+        <span className="nav-section-title">
+          <b>ORGANIZE</b>
+          <i />
+        </span>
         <nav aria-label="Personal" className="shell-nav-group">
           {navigation
             .filter((item) =>
@@ -159,36 +183,51 @@ export function AppLayout({
             .map(renderNav)}
         </nav>
         <div className="shell-divider" />
-        <span className="nav-section-title">THINK</span>
+        <span className="nav-section-title">
+          <b>THINK</b>
+          <i />
+        </span>
         <nav aria-label="Tools" className="shell-nav-group">
           {navigation
             .filter((item) => ["brain-dump", "ai-assistant"].includes(item.id))
             .map(renderNav)}
         </nav>
         <div className="shell-divider" />
-        <span className="nav-section-title">PERSONAL</span>
+        <span className="nav-section-title">
+          <b>PERSONAL</b>
+          <i />
+        </span>
         <nav aria-label="Insights" className="shell-nav-group">
           {navigation
             .filter((item) => item.id === "focus-insights")
             .map(renderNav)}
         </nav>
         <div className="shell-bottom">
-          <button
-            onClick={() => navigate("settings")}
-            className={`shell-nav ${currentTab === "settings" ? "selected" : ""}`}
-          >
-            <Settings size={17} strokeWidth={1.65} />
-            <span>Settings</span>
-          </button>
-          <div className="shell-sync">
-            {syncState.isSyncing ? (
-              <RefreshCw size={11} className="animate-spin" />
-            ) : (
-              <span
-                className={`status-dot ${syncState.error ? "error" : ""}`}
-              />
-            )}
-            <span>{syncLabel}</span>
+          <div className="sidebar-account-card">
+            <button
+              className="sidebar-account-main"
+              onClick={() => navigate("settings")}
+              aria-label="Open account settings"
+            >
+              <span className="sidebar-account-avatar">
+                {profile?.full_name?.charAt(0).toUpperCase() || "P"}
+              </span>
+              <span>
+                <strong>{profile?.full_name || "My workspace"}</strong>
+                <small>Personal workspace</small>
+              </span>
+              <Settings size={15} />
+            </button>
+            <div className="shell-sync">
+              {syncState.isSyncing ? (
+                <RefreshCw size={11} className="animate-spin" />
+              ) : (
+                <span
+                  className={`status-dot ${syncState.error ? "error" : ""}`}
+                />
+              )}
+              <span>{syncLabel}</span>
+            </div>
           </div>
         </div>
       </aside>
