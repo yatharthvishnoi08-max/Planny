@@ -7,6 +7,7 @@ import {
   useReducedMotion,
   useScroll,
   useSpring,
+  useTransform,
 } from "framer-motion";
 import {
   ArrowRight,
@@ -266,7 +267,12 @@ function PlanDemo({
 export const LandingPage: React.FC = () => {
   const { signIn, signUp, resetPassword } = useAuth();
   const reduceMotion = useReducedMotion();
+  const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll();
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
   const smoothProgress = useSpring(scrollYProgress, {
     stiffness: 110,
     damping: 26,
@@ -280,6 +286,16 @@ export const LandingPage: React.FC = () => {
     stiffness: 150,
     damping: 22,
   });
+  const cursorX = useSpring(useMotionValue(-500), {
+    stiffness: 90,
+    damping: 24,
+  });
+  const cursorY = useSpring(useMotionValue(-500), {
+    stiffness: 90,
+    damping: 24,
+  });
+  const heroCopyY = useTransform(heroProgress, [0, 1], [0, 90]);
+  const heroDemoY = useTransform(heroProgress, [0, 1], [0, -70]);
   const [mode, setMode] = useState<"signup" | "login" | null>(null);
   const [status, setStatus] = useState<string | null>(null),
     [busy, setBusy] = useState(false);
@@ -343,7 +359,21 @@ export const LandingPage: React.FC = () => {
   };
   return (
     <MotionConfig reducedMotion="user">
-      <div className="lp">
+      <div
+        className="lp"
+        onPointerMove={(event) => {
+          if (reduceMotion || event.pointerType === "touch") return;
+          cursorX.set(event.clientX - 190);
+          cursorY.set(event.clientY - 190);
+        }}
+      >
+        {!reduceMotion && (
+          <motion.div
+            className="lp-cursor-orb"
+            style={{ x: cursorX, y: cursorY }}
+            aria-hidden="true"
+          />
+        )}
         <motion.div
           className="lp-scroll-progress"
           style={{ scaleX: smoothProgress }}
@@ -397,9 +427,20 @@ export const LandingPage: React.FC = () => {
           </div>
         </header>
         <main>
-          <section className="lp-hero">
+          <section className="lp-hero" ref={heroRef}>
+            <div className="lp-hero-grid" aria-hidden="true" />
+            <div className="lp-hero-code lp-code-one" aria-hidden="true">
+              01 — CAPTURE
+            </div>
+            <div className="lp-hero-code lp-code-two" aria-hidden="true">
+              02 — PLAN
+            </div>
+            <div className="lp-hero-code lp-code-three" aria-hidden="true">
+              03 — MOVE
+            </div>
             <motion.div
               className="lp-hero-copy"
+              style={reduceMotion ? undefined : { y: heroCopyY }}
               initial={reduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
@@ -410,7 +451,8 @@ export const LandingPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.08, duration: 0.45 }}
               >
-                <span className="lp-dot" /> LESS MENTAL TABS. MORE REAL LIFE.
+                <span className="lp-dot" /> PRODUCTIVITY FOR BEAUTIFULLY MESSY
+                BRAINS
               </motion.span>
               <h1 aria-label="Stop keeping your life inside your head.">
                 {["Stop keeping", "your life inside", "your head."].map(
@@ -457,6 +499,18 @@ export const LandingPage: React.FC = () => {
                 Planny turns your goals, tasks, deadlines and ideas into a
                 simple plan — so you always know what to do next.
               </motion.p>
+              <motion.button
+                className="lp-hero-cta"
+                onClick={go}
+                initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.72, duration: 0.5 }}
+                whileHover={reduceMotion ? undefined : { scale: 1.035 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+              >
+                <span>Dump the chaos</span>
+                <i><ArrowUpRight size={20} /></i>
+              </motion.button>
               <motion.div
                 className="lp-hero-note"
                 initial={reduceMotion ? false : { opacity: 0, x: -12 }}
@@ -479,7 +533,7 @@ export const LandingPage: React.FC = () => {
               style={
                 reduceMotion
                   ? undefined
-                  : { rotateX: demoRotateX, rotateY: demoRotateY }
+                  : { rotateX: demoRotateX, rotateY: demoRotateY, y: heroDemoY }
               }
               initial={reduceMotion ? false : { opacity: 0, y: 28, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -495,6 +549,32 @@ export const LandingPage: React.FC = () => {
                 demoRotateY.set(0);
               }}
             >
+              <div className="lp-demo-orbit" aria-hidden="true" />
+              <motion.div
+                className="lp-signal lp-signal-one"
+                aria-hidden="true"
+                animate={reduceMotion ? undefined : { y: [0, -10, 0], rotate: [-4, -2, -4] }}
+                transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <span className="lp-signal-icon">✓</span>
+                <span><small>JUST FINISHED</small>Physics revision</span>
+              </motion.div>
+              <motion.div
+                className="lp-signal lp-signal-two"
+                aria-hidden="true"
+                animate={reduceMotion ? undefined : { y: [0, 9, 0], rotate: [5, 3, 5] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: .4 }}
+              >
+                <strong>42</strong><span><small>MINUTES</small>in focus</span>
+              </motion.div>
+              <motion.div
+                className="lp-signal lp-signal-three"
+                aria-hidden="true"
+                animate={reduceMotion ? undefined : { x: [0, 8, 0], y: [0, -5, 0] }}
+                transition={{ duration: 4.6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              >
+                <Sparkles size={15} /> Your next move is ready
+              </motion.div>
               <PlanDemo onSave={save} />
             </motion.div>
           </section>
