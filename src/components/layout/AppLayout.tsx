@@ -19,6 +19,7 @@ import {
   ChartNoAxesCombined,
 } from "lucide-react";
 import { createPortal } from "react-dom";
+import { motion } from "framer-motion";
 import { SyncState, syncEngine } from "../../lib/sync";
 import { useAuth } from "../../context/AuthContext";
 export type NavigationTab =
@@ -112,6 +113,14 @@ export function AppLayout({
       onClick={() => navigate(item.id)}
       className={`shell-nav ${currentTab === item.id ? "selected" : ""}`}
     >
+      {currentTab === item.id && (
+        <motion.span
+          className="nav-active-wash"
+          layoutId="sidebar-active-tab"
+          transition={{ type: "spring", stiffness: 360, damping: 31 }}
+          aria-hidden="true"
+        />
+      )}
       <span className="nav-icon">
         <item.icon size={18} strokeWidth={1.8} />
       </span>
