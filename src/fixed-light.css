@@ -223,3 +223,6 @@ body,
 ::selection { color:#fff; background:#18181b; }
 
 .app-shell .shell-sidebar .shell-nav { --nav-color:#18181b; }
+.app-shell .shell-sidebar .shell-nav .nav-icon,
+.app-shell .shell-sidebar .shell-nav:hover .nav-icon,
+.app-shell .shell-sidebar .shell-nav.selected .nav-icon { color:#58b638; }
