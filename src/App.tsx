@@ -168,7 +168,8 @@ export const App: React.FC = () => {
     syncEngine.saveTask({
       id: taskId,
       user_id: user?.id || "user-default",
-      project_id: parsed.project_id || taskProjectId,
+      project_id:
+        parsed.project_id !== undefined ? parsed.project_id : taskProjectId,
       title: parsed.title,
       description: parsed.description,
       priority: parsed.priority,
@@ -333,6 +334,7 @@ export const App: React.FC = () => {
         onClose={() => setIsAITaskModalOpen(false)}
         onConfirmTask={handleCreateAITask}
         projects={projects}
+        initialProjectId={taskProjectId || ""}
       />
 
       {/* Full-Screen Distraction-Free Focus Mode */}
