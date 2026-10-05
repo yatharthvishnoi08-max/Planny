@@ -53,10 +53,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let alive = true;
     let revision = 0;
+    let appliedUserId: string | null | undefined;
     const apply = async (next: User | null) => {
+      const nextUserId = next?.id || null;
+      // Supabase emits token/session refresh events when a background tab is
+      // revisited. The same account is already hydrated, so clearing and
+      // reloading it would briefly remount onboarding.
+      if (appliedUserId !== undefined && appliedUserId === nextUserId) return;
+      appliedUserId = nextUserId;
       const current = ++revision;
       if (!alive) return;
-      syncEngine.setUser(next?.id || null);
+      syncEngine.setUser(nextUserId);
       setUser(next);
       setProfile(null);
       if (next) {
@@ -214,12 +221,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return error ? { error: error.message } : {};
   };
   const saveProfile = async (value: Profile) => {
-    if (isRealSupabaseConfigured()) {
-      const { error } = await supabase.from("profiles").upsert(value);
-      if (error) throw error;
-    }
+    // Persist first so setup remains complete during a slow/offline cloud save.
     setProfile(value);
     localStorage.setItem(`orbit_profile:${value.id}`, JSON.stringify(value));
+    if (isRealSupabaseConfigured()) {
+      const { error } = await supabase.from("profiles").upsert(value);
+      if (error)
+        console.warn("Profile cloud sync will retry later", error.message);
+    }
   };
   const completeOnboarding: AuthContextType["completeOnboarding"] = async (data) => {
     if (profile) {
@@ -231,8 +240,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         onboarding_data: data,
         updated_at: new Date().toISOString(),
       };
-      await saveProfile(value);
       localStorage.setItem(`planny_onboarding_complete:${profile.id}`, "1");
+      await saveProfile(value);
     }
   };
   const updateTheme = (theme: "dark" | "light" | "system") => {
@@ -255,7 +264,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         profile,
         isLoading,
-        isOnboarded: profile?.onboarding_completed ?? false,
+        isOnboarded:
+          !!profile?.onboarding_completed ||
+          !!(user &&
+            localStorage.getItem(`planny_onboarding_complete:${user.id}`)),
         signIn,
         signUp,
         signOut,
