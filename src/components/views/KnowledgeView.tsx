@@ -567,7 +567,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
 
               {modalType === "pdf" && (
                 <div className="pdf-upload-field">
-                  <label htmlFor="knowledge-pdf">PDF file · maximum 100 MB</label>
+                  <label htmlFor="knowledge-pdf">PDF file · maximum 25 MB</label>
                   <input
                     id="knowledge-pdf"
                     type="file"

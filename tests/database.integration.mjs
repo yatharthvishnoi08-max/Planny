@@ -31,6 +31,9 @@ await db.exec(
   fs.readFileSync(root + "20261005010000_pdf_storage.sql", "utf8"),
 );
 await db.exec(
+  fs.readFileSync(root + "20261005020000_reduce_pdf_upload_limit.sql", "utf8"),
+);
+await db.exec(
   `GRANT USAGE ON SCHEMA public,auth,storage TO authenticated; GRANT ALL ON ALL TABLES IN SCHEMA public,storage TO authenticated; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth,storage TO authenticated; INSERT INTO auth.users VALUES ('11111111-1111-4111-8111-111111111111','a@test.invalid','{}'),('22222222-2222-4222-8222-222222222222','b@test.invalid','{}'); SET ROLE authenticated; SET request.jwt.claim.sub='11111111-1111-4111-8111-111111111111';`,
 );
 const owner = "11111111-1111-4111-8111-111111111111",
@@ -73,7 +76,7 @@ assert.equal((await db.query("SELECT * FROM subtasks")).rows.length, 1);
 assert.equal(
   (await db.query("SELECT file_size_limit FROM storage.buckets WHERE id='user-pdfs'"))
     .rows[0].file_size_limit,
-  104857600,
+  26214400,
 );
 await db.query(
   "INSERT INTO storage.objects(bucket_id,name) VALUES ('user-pdfs',$1)",

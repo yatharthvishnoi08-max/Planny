@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 export const PDF_BUCKET = "user-pdfs";
-export const MAX_PDF_BYTES = 100 * 1024 * 1024;
+export const MAX_PDF_BYTES = 25 * 1024 * 1024;
 const PDF_PREFIX = "planny-pdf:";
 
 export function validatePdf(file: File): string | null {
@@ -9,7 +9,7 @@ export function validatePdf(file: File): string | null {
     file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
   if (!looksLikePdf) return "Choose a PDF file.";
   if (!file.size) return "This PDF is empty.";
-  if (file.size > MAX_PDF_BYTES) return "PDFs can be up to 100 MB.";
+  if (file.size > MAX_PDF_BYTES) return "PDFs can be up to 25 MB.";
   return null;
 }
 
