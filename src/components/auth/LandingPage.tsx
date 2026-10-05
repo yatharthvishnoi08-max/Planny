@@ -133,26 +133,32 @@ function PlanDemo({
                 <motion.span
                   className="lp-question-mark"
                   aria-hidden="true"
-                  animate={{ rotate: [-4, 5, -4], y: [0, -4, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  animate={{ rotate: [-7, 5, -7], scale: [1, 1.08, 1] }}
+                  transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
                 >
                   ?
                 </motion.span>
                 <div>
-                  <span className="lp-eyebrow">QUICK REALITY CHECK</span>
+                  <span className="lp-question-kicker">
+                    <i /> YOUR TURN
+                    <b>Pick all that fit</b>
+                  </span>
                   <h2>
-                    What keeps getting
+                    Be honest—what keeps
                     <br />
-                    <em>in your way?</em>
+                    <em>stealing your time?</em>
                   </h2>
                 </div>
               </div>
               <div className="lp-selection-help">
-                <p>Choose every answer that feels true. No perfect answer needed.</p>
+                <p>
+                  <strong>Tap every answer that sounds like you.</strong>
+                  You can choose more than one.
+                </p>
                 <span className={selectedProblems.length ? "has-selection" : ""}>
                   {selectedProblems.length
                     ? `${selectedProblems.length} selected`
-                    : "Select at least one"}
+                    : "MULTI-SELECT"}
                 </span>
               </div>
               <div className="lp-options">
@@ -181,7 +187,7 @@ function PlanDemo({
                 disabled={!selectedProblems.length}
                 onClick={() => setStep(1)}
               >
-                Untangle my day
+                Show me a better way
                 {selectedProblems.length > 0 && (
                   <small>{selectedProblems.length}</small>
                 )}

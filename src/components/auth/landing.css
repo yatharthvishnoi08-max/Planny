@@ -1755,48 +1755,127 @@ html:has(.lp-auth-backdrop) {
 
 /* The first prompt should feel like a question, not a settings form. */
 .lp-question-head {
+  position: relative;
   display: grid;
-  grid-template-columns: 58px 1fr;
-  align-items: start;
-  gap: 14px;
-  margin-top: -2px;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  gap: 16px;
+  margin: -6px -7px 14px;
+  padding: 19px 18px;
+  overflow: hidden;
+  border: 1px solid #d5ff9f;
+  border-radius: 18px 18px 18px 5px;
+  background:
+    radial-gradient(circle at 92% 12%, #ffffff9e, transparent 23%),
+    linear-gradient(112deg, #c8ff7e, #aaf379 47%, #8edff2 115%);
+  box-shadow:
+    0 18px 50px #0006,
+    0 0 0 5px #b6f36b0d,
+    0 0 52px #b6f36b20;
+  transform: rotate(-.45deg);
+  animation: lp-question-breathe 3.2s ease-in-out infinite;
+}
+.lp-question-head::after {
+  content: "?";
+  position: absolute;
+  right: -9px;
+  bottom: -52px;
+  color: #0d130b0d;
+  font: 900 170px/1 Arial, sans-serif;
+  transform: rotate(9deg);
+  pointer-events: none;
+}
+@keyframes lp-question-breathe {
+  50% {
+    box-shadow:
+      0 20px 55px #0006,
+      0 0 0 8px #b6f36b10,
+      0 0 70px #b6f36b35;
+  }
 }
 .lp-question-head h2 {
-  margin-top: 10px;
-  font-size: clamp(27px, 2.4vw, 35px);
-  line-height: 1.06;
-  letter-spacing: -1.6px;
+  position: relative;
+  z-index: 1;
+  margin: 8px 0 0;
+  color: #11160d;
+  font-size: clamp(28px, 2.55vw, 37px);
+  font-weight: 720;
+  line-height: 1.01;
+  letter-spacing: -1.9px;
 }
 .lp-question-head h2 em {
-  color: transparent;
-  background: linear-gradient(95deg, #b6f36b, #83dfff 52%, #c4a2ff);
-  background-clip: text;
-  -webkit-background-clip: text;
+  position: relative;
+  color: #3c245d;
   font-style: normal;
+}
+.lp-question-head h2 em::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 2%;
+  bottom: -5px;
+  height: 4px;
+  border-radius: 999px;
+  background: #71509e;
+  transform: rotate(-1deg);
+  opacity: .78;
+}
+.lp-question-kicker {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #25301e;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+.lp-question-kicker i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #5a347f;
+  box-shadow: 0 0 0 0 #5a347f66;
+  animation: lp-question-ping 1.7s ease-out infinite;
+}
+.lp-question-kicker b {
+  margin-left: auto;
+  padding: 5px 8px;
+  border: 1px solid #10160c2c;
+  border-radius: 999px;
+  background: #ffffff65;
+  font-size: 7px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+@keyframes lp-question-ping {
+  70% { box-shadow: 0 0 0 7px #5a347f00; }
 }
 .lp-question-mark {
   position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 64px;
-  border: 1px solid #b6f36b63;
-  border-radius: 18px 18px 18px 5px;
+  width: 58px;
+  height: 70px;
+  border: 1px solid #ffffff38;
+  border-radius: 19px 19px 19px 6px;
   background:
-    radial-gradient(circle at 28% 20%, #ffffff19, transparent 30%),
-    linear-gradient(145deg, #b6f36b20, #8dcfff10 55%, #c4a2ff1c);
-  color: #c9ff8e;
-  font-size: 37px;
-  font-weight: 500;
+    radial-gradient(circle at 28% 20%, #ffffff24, transparent 30%),
+    linear-gradient(145deg, #30213f, #161a18 70%);
+  color: #c8ff7e;
+  font-size: 41px;
+  font-weight: 700;
   line-height: 1;
-  box-shadow: 0 15px 35px #0005, 0 0 30px #b6f36b0b;
+  box-shadow: 0 13px 25px #17200d45, inset 0 1px #ffffff17;
 }
 .lp-question-mark::after {
   content: "";
   position: absolute;
   width: 70px;
   height: 70px;
-  border: 1px solid #8dcfff1c;
+  border: 1px solid #24321a2b;
   border-radius: 50%;
   animation: lp-question-ring 3s ease-in-out infinite;
 }
@@ -1808,7 +1887,7 @@ html:has(.lp-auth-backdrop) {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin: 3px 0 16px;
+  margin: 0 0 16px;
   padding: 10px 0 12px;
   border-bottom: 1px solid #ffffff0d;
 }
@@ -1816,16 +1895,24 @@ html:has(.lp-auth-backdrop) {
   margin: 0;
   color: #afb6aa;
   font-size: 11px;
+  line-height: 1.5;
+}
+.lp-demo .lp-selection-help p strong {
+  display: block;
+  color: #f0f4eb;
+  font-size: 12px;
+  font-weight: 650;
 }
 .lp-selection-help > span {
   flex-shrink: 0;
   padding: 5px 8px;
   border: 1px solid #ffffff12;
   border-radius: 999px;
-  color: #7e867a;
-  background: #ffffff04;
+  color: #cdb3ef;
+  background: #c4a2ff0d;
   font-size: 8px;
-  letter-spacing: .04em;
+  font-weight: 750;
+  letter-spacing: .1em;
 }
 .lp-selection-help > span.has-selection {
   border-color: #b6f36b42;
@@ -1842,7 +1929,7 @@ html:has(.lp-auth-backdrop) {
   gap: 9px;
   overflow: hidden;
   padding: 10px 11px;
-  border-color: #ffffff10;
+  border-color: #ffffff17;
   border-radius: 12px;
   background: linear-gradient(120deg, #ffffff04, #ffffff01);
   color: #b9beb5;
@@ -1854,9 +1941,9 @@ html:has(.lp-auth-backdrop) {
     box-shadow .22s ease;
 }
 .lp-options button:hover {
-  transform: translateY(-2px);
-  border-color: #ffffff25;
-  background: #ffffff07;
+  transform: translateY(-3px) rotate(-.25deg);
+  border-color: #b6f36b48;
+  background: #b6f36b09;
   color: #eef0e9;
 }
 .lp-options button[aria-pressed="true"] {
@@ -1908,6 +1995,8 @@ html:has(.lp-auth-backdrop) {
   position: relative;
   min-height: 49px;
   overflow: hidden;
+  font-size: 12px;
+  letter-spacing: .01em;
 }
 .lp-question-continue::before {
   content: "";
