@@ -192,7 +192,7 @@ export function TodayView({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: 16 }}
       transition={{ duration: 0.22 }}
-      className={`smart-task-card ${done ? "is-done" : ""}`}
+      className={`smart-task-card ${done ? "is-done" : ""} ${rescheduling === task.id ? "menu-open" : ""}`}
       key={task.id}
     >
       <button
@@ -248,6 +248,8 @@ export function TodayView({
               setRescheduling(rescheduling === task.id ? null : task.id)
             }
             aria-label={`Reschedule ${task.title}`}
+            aria-expanded={rescheduling === task.id}
+            aria-haspopup="menu"
           >
             <CalendarClock size={14} />
             <span>Move</span>
@@ -268,7 +270,7 @@ export function TodayView({
         </div>
       )}
       {rescheduling === task.id && (
-        <div className="reschedule-popover">
+        <div className="reschedule-popover" role="menu">
           <span>Move to</span>
           <button onClick={() => moveTask(task, "today")}>Today</button>
           <button onClick={() => moveTask(task, "tomorrow")}>Tomorrow</button>

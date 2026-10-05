@@ -3026,6 +3026,28 @@ button:active:not(:disabled) {
   border-color: #b6f36b45;
 }
 .light .task-rollover-card button { color: #36531e; }
+
+/* Keep the Move menu above adjacent rows; task-card decoration normally clips. */
+.smart-task-card.menu-open {
+  z-index: 60;
+  overflow: visible;
+}
+.smart-task-card.menu-open::before {
+  border-radius: 4px;
+}
+.smart-task-card.menu-open .smart-task-actions {
+  opacity: 1;
+  transform: none;
+}
+.smart-task-card.menu-open .reschedule-popover {
+  z-index: 70;
+  animation: reschedule-menu-in .18s cubic-bezier(.2,.8,.2,1);
+  transform-origin: top right;
+}
+@keyframes reschedule-menu-in {
+  from { opacity: 0; transform: translateY(-5px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 @media (max-width: 767px) {
   .shell-header { margin: 7px 8px 0; border-radius: 15px; }
 }
