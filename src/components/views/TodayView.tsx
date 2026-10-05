@@ -20,7 +20,6 @@ import {
   MoreHorizontal,
   Play,
   Plus,
-  Repeat2,
   Sparkles,
   WandSparkles,
 } from "lucide-react";
@@ -31,15 +30,10 @@ import {
   isPending,
   isTodayTask,
   localDate,
-  routineOccursOn,
 } from "../../lib/dates";
-import {
-  availableMinutesToday,
-  nextTaskReason,
-  recommendNextTask,
-} from "../../lib/dayPlanner";
+import { availableMinutesToday } from "../../lib/dayPlanner";
 import { focusSecondsForDay, formatFocusTime } from "../../lib/focusAnalytics";
-import { PlanMyDayModal, readPlanBlocks } from "../daily/PlanMyDayModal";
+import { PlanMyDayModal } from "../daily/PlanMyDayModal";
 import { triggerHaptic } from "../../lib/platform";
 
 interface TodayViewProps {
@@ -68,7 +62,6 @@ const greeting = () =>
 export function TodayView({
   tasks,
   routines,
-  routineInstances,
   focusSessions,
   dailyPlans,
   endOfDay = "21:00",
@@ -77,7 +70,6 @@ export function TodayView({
   onOpenAITaskModal,
   onOpenDayReview,
   onOpenAssistant,
-  onOpenRoutines,
   planRequest = 0,
 }: TodayViewProps) {
   const [filter, setFilter] = useState<"all" | "open" | "completed">("all");
@@ -107,9 +99,6 @@ export function TodayView({
   const completed = tasks.filter(
     (task) => task.status === "completed" && isTodayTask(task),
   );
-  const daily = routines
-    .filter((routine) => routineOccursOn(routine))
-    .sort((a, b) => a.time_of_day.localeCompare(b.time_of_day));
   const totalTasks = pending.length + completed.length;
   const completion = totalTasks
     ? Math.round((completed.length / totalTasks) * 100)
@@ -120,10 +109,7 @@ export function TodayView({
   );
   const availableMinutes = availableMinutesToday(endOfDay);
   const focusedToday = focusSecondsForDay(focusSessions, new Date());
-  const nextUp = recommendNextTask(tasks, focusSessions, availableMinutes);
   const currentPlan = dailyPlans.find((plan) => plan.date === today);
-  const planBlocks = readPlanBlocks(currentPlan);
-  const plannedTasks = planBlocks.filter((block) => block.type === "task");
 
   const add = (event: React.FormEvent) => {
     event.preventDefault();
@@ -529,75 +515,6 @@ export function TodayView({
             </span>
           </button>
         </main>
-        <aside className="smart-today-aside">
-          <section className="your-plan-card">
-            <span>
-              <Sparkles size={13} /> YOUR PLAN
-            </span>
-            <h3>
-              {plannedTasks.length
-                ? `${plannedTasks.length} focus blocks are ready.`
-                : `${formatMinutes(availableMinutes)} available today.`}
-            </h3>
-            <p>
-              {plannedTasks.length
-                ? `Your next block starts at ${plannedTasks[0]?.start}. Adjust it whenever your day changes.`
-                : "Let Planny turn your deadlines, priorities and routines into a realistic day."}
-            </p>
-            <button onClick={() => setPlannerOpen(true)}>
-              {plannedTasks.length ? "Review plan" : "Plan my day"}
-              <ArrowRight size={14} />
-            </button>
-          </section>
-          {nextUp && (
-            <section className="next-up-card">
-              <span>NEXT UP</span>
-              <h3>{nextUp.title}</h3>
-              <strong>
-                {formatMinutes(nextUp.estimated_duration_minutes)}
-              </strong>
-              <div>
-                {nextTaskReason(nextUp, availableMinutes).map((reason) => (
-                  <small key={reason}>
-                    <i />
-                    {reason}
-                  </small>
-                ))}
-              </div>
-              <button onClick={() => onStartFocus(nextUp)}>
-                <Play size={15} /> Start focus
-              </button>
-            </section>
-          )}
-          <section className="today-routines-card">
-            <div>
-              <span>TODAY’S ROUTINES</span>
-              <button onClick={onOpenRoutines}>View all</button>
-            </div>
-            {daily.slice(0, 3).map((routine) => {
-              const done = routineInstances.some(
-                (item) =>
-                  item.routine_id === routine.id && item.status === "completed",
-              );
-              return (
-                <button
-                  key={routine.id}
-                  className={done ? "done" : ""}
-                  onClick={() => syncEngine.toggleRoutineCompletion(routine.id)}
-                >
-                  <span>{routine.time_of_day}</span>
-                  <strong>{routine.title}</strong>
-                  <i>{done && <Check size={11} />}</i>
-                </button>
-              );
-            })}
-            {!daily.length && (
-              <div className="aside-empty">
-                <Repeat2 size={15} /> No routines scheduled today.
-              </div>
-            )}
-          </section>
-        </aside>
       </div>
       <PlanMyDayModal
         isOpen={plannerOpen}
