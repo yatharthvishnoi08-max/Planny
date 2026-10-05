@@ -1752,3 +1752,203 @@ html:has(.lp-auth-backdrop) {
     min-height: 44px;
   }
 }
+
+/* The first prompt should feel like a question, not a settings form. */
+.lp-question-head {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  align-items: start;
+  gap: 14px;
+  margin-top: -2px;
+}
+.lp-question-head h2 {
+  margin-top: 10px;
+  font-size: clamp(27px, 2.4vw, 35px);
+  line-height: 1.06;
+  letter-spacing: -1.6px;
+}
+.lp-question-head h2 em {
+  color: transparent;
+  background: linear-gradient(95deg, #b6f36b, #83dfff 52%, #c4a2ff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  font-style: normal;
+}
+.lp-question-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 64px;
+  border: 1px solid #b6f36b63;
+  border-radius: 18px 18px 18px 5px;
+  background:
+    radial-gradient(circle at 28% 20%, #ffffff19, transparent 30%),
+    linear-gradient(145deg, #b6f36b20, #8dcfff10 55%, #c4a2ff1c);
+  color: #c9ff8e;
+  font-size: 37px;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow: 0 15px 35px #0005, 0 0 30px #b6f36b0b;
+}
+.lp-question-mark::after {
+  content: "";
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border: 1px solid #8dcfff1c;
+  border-radius: 50%;
+  animation: lp-question-ring 3s ease-in-out infinite;
+}
+@keyframes lp-question-ring {
+  50% { transform: scale(1.18); opacity: .2; }
+}
+.lp-selection-help {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 3px 0 16px;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid #ffffff0d;
+}
+.lp-demo .lp-selection-help p {
+  margin: 0;
+  color: #afb6aa;
+  font-size: 11px;
+}
+.lp-selection-help > span {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border: 1px solid #ffffff12;
+  border-radius: 999px;
+  color: #7e867a;
+  background: #ffffff04;
+  font-size: 8px;
+  letter-spacing: .04em;
+}
+.lp-selection-help > span.has-selection {
+  border-color: #b6f36b42;
+  color: #c9f99b;
+  background: #b6f36b0b;
+}
+.lp-options {
+  gap: 7px;
+}
+.lp-options button {
+  position: relative;
+  min-height: 62px;
+  align-items: center;
+  gap: 9px;
+  overflow: hidden;
+  padding: 10px 11px;
+  border-color: #ffffff10;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #ffffff04, #ffffff01);
+  color: #b9beb5;
+  transition:
+    transform .26s cubic-bezier(.2,.8,.2,1),
+    border-color .22s ease,
+    background .22s ease,
+    color .22s ease,
+    box-shadow .22s ease;
+}
+.lp-options button:hover {
+  transform: translateY(-2px);
+  border-color: #ffffff25;
+  background: #ffffff07;
+  color: #eef0e9;
+}
+.lp-options button[aria-pressed="true"] {
+  transform: translateY(-1px);
+  border-color: #b6f36b65;
+  background:
+    linear-gradient(115deg, #b6f36b16, #8dcfff08 55%, #c4a2ff0c),
+    #11150f;
+  color: #efffe0;
+  box-shadow: inset 0 1px #ffffff0b, 0 8px 24px #0003;
+}
+.lp-options button[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(#b6f36b, #83dfff, #c4a2ff);
+}
+.lp-option-number {
+  color: #666e62;
+  font: 8px/1 monospace;
+}
+.lp-choice-copy {
+  flex: 1;
+  line-height: 1.35;
+}
+.lp-choice-check {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  border: 1px solid #596053;
+  border-radius: 6px;
+  color: #14200f;
+  transition: background .2s ease, border-color .2s ease, transform .25s ease;
+}
+.lp-options button[aria-pressed="true"] .lp-option-number {
+  color: #9fcf73;
+}
+.lp-options button[aria-pressed="true"] .lp-choice-check {
+  border-color: #b6f36b;
+  background: #b6f36b;
+  transform: rotate(-3deg) scale(1.05);
+}
+.lp-question-continue {
+  position: relative;
+  min-height: 49px;
+  overflow: hidden;
+}
+.lp-question-continue::before {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -30%;
+  width: 60px;
+  height: 160%;
+  transform: rotate(18deg);
+  background: linear-gradient(90deg, transparent, #ffffff45, transparent);
+  animation: lp-question-shine 4s ease-in-out infinite;
+}
+.lp-question-continue small {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: #14200f17;
+  font-size: 9px;
+}
+@keyframes lp-question-shine {
+  45%, 100% { left: 120%; }
+}
+@media (max-width: 520px) {
+  .lp-question-head {
+    grid-template-columns: 44px 1fr;
+    gap: 11px;
+  }
+  .lp-question-mark {
+    width: 42px;
+    height: 50px;
+    border-radius: 14px 14px 14px 4px;
+    font-size: 29px;
+  }
+  .lp-question-mark::after { width: 54px; height: 54px; }
+  .lp-question-head h2 { font-size: 27px; }
+  .lp-selection-help { align-items: flex-start; }
+  .lp-selection-help > span { margin-top: 1px; }
+}
+@media (max-width: 400px) {
+  .lp-options button { min-height: 48px; }
+}

@@ -94,7 +94,7 @@ function PlanDemo({
   compact?: boolean;
 }) {
   const [step, setStep] = useState(compact ? 1 : 0);
-  const [problem, setProblem] = useState<number | null>(null);
+  const [selectedProblems, setSelectedProblems] = useState<number[]>([]);
   const [text, setText] = useState("");
   const [tasks, setTasks] = useState<DraftTask[]>([]);
   useEffect(() => {
@@ -129,33 +129,63 @@ function PlanDemo({
         >
           {step === 0 && (
             <>
-              <span className="lp-eyebrow">LET’S START WITH YOU</span>
-              <h2>
-                What’s your biggest
-                <br />
-                productivity problem?
-              </h2>
-              <p>Pick the one that feels most like today.</p>
+              <div className="lp-question-head">
+                <motion.span
+                  className="lp-question-mark"
+                  aria-hidden="true"
+                  animate={{ rotate: [-4, 5, -4], y: [0, -4, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  ?
+                </motion.span>
+                <div>
+                  <span className="lp-eyebrow">QUICK REALITY CHECK</span>
+                  <h2>
+                    What keeps getting
+                    <br />
+                    <em>in your way?</em>
+                  </h2>
+                </div>
+              </div>
+              <div className="lp-selection-help">
+                <p>Choose every answer that feels true. No perfect answer needed.</p>
+                <span className={selectedProblems.length ? "has-selection" : ""}>
+                  {selectedProblems.length
+                    ? `${selectedProblems.length} selected`
+                    : "Select at least one"}
+                </span>
+              </div>
               <div className="lp-options">
                 {problems.map((p, i) => (
                   <button
                     key={p}
-                    aria-pressed={problem === i}
-                    onClick={() => setProblem(i)}
+                    aria-pressed={selectedProblems.includes(i)}
+                    onClick={() =>
+                      setSelectedProblems((current) =>
+                        current.includes(i)
+                          ? current.filter((value) => value !== i)
+                          : [...current, i],
+                      )
+                    }
                   >
-                    <span className="lp-radio">
-                      {problem === i && <Check size={12} />}
+                    <span className="lp-option-number">0{i + 1}</span>
+                    <span className="lp-choice-copy">{p}</span>
+                    <span className="lp-choice-check">
+                      {selectedProblems.includes(i) && <Check size={12} />}
                     </span>
-                    {p}
                   </button>
                 ))}
               </div>
               <button
-                className="lp-primary lp-full"
-                disabled={problem === null}
+                className="lp-primary lp-full lp-question-continue"
+                disabled={!selectedProblems.length}
                 onClick={() => setStep(1)}
               >
-                Let’s untangle it <ArrowRight size={17} />
+                Untangle my day
+                {selectedProblems.length > 0 && (
+                  <small>{selectedProblems.length}</small>
+                )}
+                <ArrowRight size={17} />
               </button>
             </>
           )}
@@ -164,7 +194,11 @@ function PlanDemo({
               <button className="lp-back" onClick={() => setStep(0)}>
                 <ChevronLeft size={14} /> Back
               </button>
-              <h2>{questions[problem ?? 0]}</h2>
+              <h2>
+                {selectedProblems.length > 1
+                  ? "What’s taking up the most space today?"
+                  : questions[selectedProblems[0] ?? 0]}
+              </h2>
               <p>One task per line works best. You can edit every task next.</p>
               <form
                 onSubmit={(e) => {
@@ -239,7 +273,9 @@ function PlanDemo({
                 onClick={() =>
                   onSave({
                     version: 1,
-                    problem: problem === null ? "" : problems[problem],
+                    problem: selectedProblems
+                      .map((problem) => problems[problem])
+                      .join(", "),
                     tasks,
                   })
                 }
