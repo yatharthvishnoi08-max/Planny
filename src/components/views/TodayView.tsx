@@ -346,12 +346,12 @@ export function TodayView({
               <span>DO THE NEXT RIGHT THING</span>
               <h2>Today’s tasks</h2>
             </div>
-            <div className="task-tabs" aria-label="Task filter">
+            <div className="task-tabs today-task-filter" aria-label="Task filter">
               {(
                 [
-                  ["all", "All", totalTasks],
-                  ["open", "To do", pending.length],
-                  ["completed", "Done", completed.length],
+                  ["all", "All tasks", totalTasks],
+                  ["open", "Open", pending.length],
+                  ["completed", "Finished", completed.length],
                 ] as const
               ).map(([value, label, count]) => (
                 <button

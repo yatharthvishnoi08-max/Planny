@@ -18,7 +18,7 @@ export const UpcomingView: React.FC<UpcomingViewProps> = ({
     pendingTasks.filter((t) => taskScheduleBucket(t) === bucket);
 
   const renderSection = (title: string, items: Task[]) => (
-    <div className="mb-6">
+    <section className="upcoming-group mb-6">
       <div className="flex items-center justify-between mb-3 pb-1 border-b border-surface-border">
         <h3 className="text-xs font-mono uppercase tracking-wider text-muted-foreground font-semibold">
           {title} ({items.length})
@@ -32,12 +32,12 @@ export const UpcomingView: React.FC<UpcomingViewProps> = ({
       ) : (
         <div className="space-y-2">
           {items.map((t) => (
-            <div
+            <button
               key={t.id}
               onClick={() => onSelectTask(t)}
-              className="p-3.5 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-border flex items-center justify-between cursor-pointer transition-colors"
+              className="upcoming-task p-3.5 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-border flex items-center justify-between cursor-pointer transition-colors"
             >
-              <div>
+              <div className="upcoming-task-copy">
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-medium text-foreground">
                     {t.title}
@@ -60,21 +60,21 @@ export const UpcomingView: React.FC<UpcomingViewProps> = ({
                 )}
               </div>
 
-              <div className="flex items-center space-x-2 text-xs font-mono text-muted-foreground">
+              <div className="upcoming-task-meta flex items-center space-x-2 text-xs font-mono text-muted-foreground">
                 <span>{formatMinutes(t.estimated_duration_minutes)}</span>
                 <span className="uppercase text-[10px] px-1.5 py-0.5 rounded bg-surface-200 border border-surface-border">
                   {t.priority}
                 </span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 
   return (
-    <div className="content-page max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10 animate-fade-in">
+    <div className="upcoming-page content-page max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10 animate-fade-in">
       <div className="pb-6 mb-6 border-b border-surface-border">
         <h1 className="text-2xl font-medium tracking-tight text-foreground">
           Upcoming
