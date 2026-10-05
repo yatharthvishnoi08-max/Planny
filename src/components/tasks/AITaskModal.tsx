@@ -326,34 +326,34 @@ export const AITaskModal: React.FC<Props> = ({
                     onChange={(event) => setPriority(priorityOptions[Number(event.target.value)].value)}
                   />
                   <div className="priority-labels">{priorityOptions.map((option, index) => <button type="button" key={option.value} className={priority === option.value ? "active" : ""} onClick={() => setPriority(option.value)}><i />{index === 1 ? "Normal" : option.label}</button>)}</div>
+                  <p className="task-flow-next-hint">Next: optional deadline, project, notes and smaller steps.</p>
                 </div>
               )}
 
               {step === 3 && (
                 <div className="task-flow-question optional-step">
-                  <div><small>OPTIONAL · SKIP IF YOU WANT</small><h3>Give it a home or a finish line?</h3><p>Only add what helps. You can change everything later.</p></div>
-                  <div className="optional-choice-grid">
-                    <button type="button" aria-pressed={addDeadline} onClick={() => setAddDeadline((value) => !value)}><span><CalendarPlus size={17} /></span><strong>Deadline</strong><small>{addDeadline ? "Added" : "No deadline"}</small></button>
-                    <button type="button" aria-pressed={addProject} onClick={() => setAddProject((value) => !value)}><span><FolderOpen size={17} /></span><strong>Project</strong><small>{addProject ? "Added" : "No project"}</small></button>
-                  </div>
-                  {addDeadline && <div className="optional-detail-panel deadline-panel">
+                  <div><small>OPTIONAL · LEAVE ANYTHING EMPTY</small><h3>Add useful details</h3><p>Everything is visible here. Fill only what saves you effort later.</p></div>
+                  <section className="visible-optional-section">
+                    <header><span><CalendarPlus size={16} /></span><div><strong>Deadline & time</strong><small>Leave empty if there is no deadline</small></div>{deadline && <button type="button" onClick={() => { setDeadline(""); setAddDeadline(false); }}>Clear</button>}</header>
                     <div className="deadline-quick-picks"><button type="button" onClick={() => setQuickDeadline(0)}>Today</button><button type="button" onClick={() => setQuickDeadline(1)}>Tomorrow</button><button type="button" onClick={() => setQuickDeadline(7)}>Next week</button></div>
-                    <label><span>Date</span><input type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} /></label>
-                    <label><span>Time</span><input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></label>
-                  </div>}
-                  {addProject && <div className="optional-detail-panel project-panel-select"><label><span>Which project?</span><select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">Choose a project</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}</select></label>{!projects.length && <p>You don’t have a project yet. This task will stay in Today.</p>}</div>}
-                  <details className="composer-extras">
-                    <summary>Need notes or smaller steps? <Plus size={15} /></summary>
-                    <label>Notes<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={2} placeholder="Details, links, anything useful" /></label>
-                    <label>Steps <span className="composer-hint">one per line</span><textarea value={subtasks} onChange={(event) => setSubtasks(event.target.value)} rows={2} placeholder="Break it into smaller wins" /></label>
-                  </details>
+                    <div className="optional-fields-row"><label><span>Date</span><input type="date" value={deadline} onChange={(event) => { setDeadline(event.target.value); setAddDeadline(Boolean(event.target.value)); }} /></label><label><span>Time</span><input type="time" value={time} disabled={!deadline} onChange={(event) => setTime(event.target.value)} /></label></div>
+                  </section>
+                  <section className="visible-optional-section">
+                    <header><span><FolderOpen size={16} /></span><div><strong>Project</strong><small>Keep it unassigned or choose its home</small></div></header>
+                    <label><span>Project</span><select value={projectId} onChange={(event) => { setProjectId(event.target.value); setAddProject(Boolean(event.target.value)); }}><option value="">No project</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}</select></label>
+                  </section>
+                  <section className="visible-optional-section notes-steps-section">
+                    <header><span><Plus size={16} /></span><div><strong>Notes & smaller steps</strong><small>Add context only if this task needs it</small></div></header>
+                    <label><span>Notes</span><textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={2} placeholder="Details, links, anything useful" /></label>
+                    <label><span>Smaller steps · one per line</span><textarea value={subtasks} onChange={(event) => setSubtasks(event.target.value)} rows={2} placeholder={'Research the topic\nWrite the first draft'} /></label>
+                  </section>
                 </div>
               )}
             </div>
 
             <div className="composer-footer task-flow-footer">
               <button type="button" className="secondary-button" onClick={() => step ? setStep((value) => value - 1) : onClose()}>{step ? <><ArrowLeft size={15} /> Back</> : "Cancel"}</button>
-              {step < 3 ? <button className="primary-button" type="button" onClick={nextStep}>Continue <ArrowRight size={15} /></button> : <button className="primary-button" type="submit">{!addDeadline && !addProject ? "Create without extras" : "Create task"} <Plus size={16} /></button>}
+              {step < 3 ? <button className="primary-button" type="button" onClick={nextStep}>{step === 2 ? "Optional details" : "Continue"} <ArrowRight size={15} /></button> : <button className="primary-button" type="submit">Create task <Plus size={16} /></button>}
             </div>
           </form>
         )}

@@ -3234,6 +3234,13 @@ button:active:not(:disabled) {
 .optional-detail-panel { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:11px; border:1px dashed #a7f36b2e; border-radius:13px; background:#090b096b; animation:task-flow-in .25s ease both; }.optional-detail-panel label { display:grid; gap:5px; color:#8b8f87; font-size:8px; }.optional-detail-panel input,.optional-detail-panel select { min-height:38px!important; padding:8px 9px!important; font-size:9px!important; color-scheme:dark; }.deadline-quick-picks { grid-column:1/-1; display:flex; gap:5px; }.deadline-quick-picks button { padding:6px 9px; border:1px solid #ffffff0e; border-radius:8px; color:#92968e; background:#ffffff04; font-size:7px; }.deadline-quick-picks button:hover { color:#c7f1aa; border-color:#a7f36b40; }.project-panel-select { grid-template-columns:1fr; }.project-panel-select p { color:#777b74; font-size:8px; }
 .optional-step .composer-extras { margin-top:1px; }.optional-step .composer-extras label { margin-top:10px; }
 .task-flow-footer { margin-top:auto!important; padding-top:14px!important; }.task-flow-footer button { min-height:40px; }.task-flow-footer .primary-button { min-width:150px; justify-content:center; }
+.task-flow-next-hint { padding:9px 11px; border:1px solid #ffffff0b; border-radius:9px; color:#82867f; background:#ffffff025; font-size:8px; text-align:center; }
+.visible-optional-section { display:grid; gap:9px; padding:11px; border:1px solid #ffffff0e; border-radius:13px; background:#090a096b; }
+.visible-optional-section>header { display:grid; grid-template-columns:31px 1fr auto; align-items:center; gap:9px; }
+.visible-optional-section>header>span { grid-row:1/3; display:grid; place-items:center; width:31px; height:31px; border-radius:9px; color:#a7f36b; background:#a7f36b0c; }
+.visible-optional-section>header>div { display:grid; gap:2px; }.visible-optional-section>header strong { font-size:9px; font-weight:600; }.visible-optional-section>header small { color:#70746d; font-size:7px; }.visible-optional-section>header>button { color:#8fc76d; font-size:7px; }
+.visible-optional-section>label,.optional-fields-row label { display:grid; gap:5px; color:#858981; font-size:8px; }.visible-optional-section label>span,.optional-fields-row label>span { font-size:7px; letter-spacing:.06em; text-transform:uppercase; }.visible-optional-section input,.visible-optional-section select,.visible-optional-section textarea { min-height:38px!important; padding:8px 9px!important; font-size:9px!important; }.visible-optional-section input[type=date],.visible-optional-section input[type=time] { color-scheme:dark; }.visible-optional-section input:disabled { opacity:.38; cursor:not-allowed; }
+.optional-fields-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }.notes-steps-section textarea { resize:none; line-height:1.45; }
 
 @media (max-width:767px) {
   .task-composer:has(.quick-task-flow) { width:calc(100vw - 20px); max-height:calc(100dvh - 20px); padding:0; overflow:hidden; }
@@ -3243,6 +3250,7 @@ button:active:not(:disabled) {
   .task-flow-progress { position:sticky; top:0; z-index:3; padding:9px 0 12px; background:hsl(var(--surface)); }.task-flow-progress button span { display:none; }.task-flow-progress button:not(:last-child)::after { left:calc(50% + 14px); right:calc(-50% + 14px); }
   .task-flow-question { padding:18px 1px 10px; gap:14px; }.task-flow-question h3 { font-size:21px; }.task-flow-question>input:not([type=range]) { font-size:16px!important; }.task-flow-question>output { font-size:27px; }
   .optional-choice-grid { grid-template-columns:1fr; }.optional-detail-panel { grid-template-columns:1fr; }.deadline-quick-picks { grid-column:auto; overflow-x:auto; }.task-flow-footer { position:sticky; bottom:0; z-index:3; padding:10px 0 calc(4px + env(safe-area-inset-bottom))!important; background:hsl(var(--surface)); }.task-flow-footer .primary-button { min-width:0; flex:1.4; font-size:9px; }.task-flow-footer .secondary-button { flex:.8; }
+  .visible-optional-section { padding:10px; }.optional-fields-row { grid-template-columns:1fr 1fr; }.visible-optional-section textarea { min-height:54px!important; }
 }
 
 /* Task rollover: a calm, explicit promise beside each normal task. */
