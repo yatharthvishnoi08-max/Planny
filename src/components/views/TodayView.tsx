@@ -32,7 +32,6 @@ import {
   localDate,
 } from "../../lib/dates";
 import { availableMinutesToday } from "../../lib/dayPlanner";
-import { focusSecondsForDay, formatFocusTime } from "../../lib/focusAnalytics";
 import { PlanMyDayModal } from "../daily/PlanMyDayModal";
 import { triggerHaptic } from "../../lib/platform";
 
@@ -100,15 +99,11 @@ export function TodayView({
     (task) => task.status === "completed" && isTodayTask(task),
   );
   const totalTasks = pending.length + completed.length;
-  const completion = totalTasks
-    ? Math.round((completed.length / totalTasks) * 100)
-    : 0;
   const remainingMinutes = pending.reduce(
     (sum, task) => sum + task.estimated_duration_minutes,
     0,
   );
   const availableMinutes = availableMinutesToday(endOfDay);
-  const focusedToday = focusSecondsForDay(focusSessions, new Date());
   const currentPlan = dailyPlans.find((plan) => plan.date === today);
 
   const add = (event: React.FormEvent) => {
@@ -335,35 +330,6 @@ export function TodayView({
           </button>
         </div>
       </header>
-      <section className="today-progress-card" aria-label="Today's progress">
-        <div className="today-progress-copy">
-          <span>TODAY’S PROGRESS</span>
-          <strong>{completion}%</strong>
-        </div>
-        <div className="today-progress-metrics">
-          <div>
-            <strong>
-              {completed.length} / {totalTasks}
-            </strong>
-            <span>tasks completed</span>
-          </div>
-          <div>
-            <strong>{formatFocusTime(focusedToday)}</strong>
-            <span>focused</span>
-          </div>
-          <div>
-            <strong>{formatMinutes(remainingMinutes)}</strong>
-            <span>estimated remaining</span>
-          </div>
-        </div>
-        <div className="today-progress-track">
-          <motion.i
-            initial={{ width: 0 }}
-            animate={{ width: `${completion}%` }}
-            transition={{ duration: 0.55, ease: "easeOut" }}
-          />
-        </div>
-      </section>
       <div className="smart-today-grid">
         <main className="smart-task-column">
           <div className="smart-section-heading">
