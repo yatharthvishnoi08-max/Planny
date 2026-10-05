@@ -19,6 +19,7 @@
 .today-progress-copy span { color:hsl(var(--muted-foreground)); font-size:9px; letter-spacing:.14em; }
 .today-progress-copy strong { font-size:35px; font-weight:550; letter-spacing:-.06em; }
 .today-progress-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.today-progress-metrics.progress-metrics-compact { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .today-progress-metrics div { display:grid; gap:3px; padding-left:20px; border-left:1px solid hsl(var(--border)); }
 .today-progress-metrics strong { font-size:18px; font-weight:500; }
 .today-progress-metrics span { color:hsl(var(--muted-foreground)); font-size:9px; }
