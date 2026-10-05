@@ -253,6 +253,28 @@ test("project priorities use numeric ranks with one as the highest", () => {
   assert.equal(projectPriority(ranked), 1);
   assert.equal(withProjectPriority(project, 200).icon, "folder|priority:99");
 });
+test("project planning metadata round-trips without changing numeric priority", () => {
+  const { projectPriority } = environment().load("projectPriority");
+  const { projectPlanning, withProjectPlanning } =
+    environment().load("projectPlanning");
+  const project = {
+    id: randomUUID(),
+    icon: "folder|priority:2",
+    title: "Launch",
+  };
+  const milestone = { id: randomUUID(), title: "Ship beta", done: false };
+  const planned = withProjectPlanning(project, {
+    targetDate: "2026-12-20",
+    weeklyMinutes: 240,
+    milestones: [milestone],
+  });
+  assert.equal(projectPriority(planned), 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(projectPlanning(planned))), {
+    targetDate: "2026-12-20",
+    weeklyMinutes: 240,
+    milestones: [milestone],
+  });
+});
 test("deleting a project keeps its tasks and removes their project link", () => {
   const { SyncEngine } = environment().load("sync");
   const engine = new SyncEngine();

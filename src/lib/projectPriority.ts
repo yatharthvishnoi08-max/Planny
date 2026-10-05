@@ -1,6 +1,6 @@
 import type { Project } from "../types/database";
 
-const priorityMarker = /\|priority:(\d+)$/;
+const priorityMarker = /\|priority:(\d+)/;
 
 /** Read a numeric project rank while remaining compatible with the live schema. */
 export function projectPriority(project: Project, fallback = 99): number {
