@@ -86,8 +86,8 @@ export const RoutinesView: React.FC<RoutinesViewProps> = ({
             Routines
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Each routine is a fresh daily check-in. Missed routines expire at
-            day’s end and never move into tomorrow.
+            Each routine is a fresh check-in for its scheduled day. Missed
+            routines expire at day’s end and never move into tomorrow.
           </p>
         </div>
 

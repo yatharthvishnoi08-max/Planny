@@ -176,6 +176,34 @@ test("Today excludes future and cancelled tasks, includes overdue and today comp
     true,
   );
 });
+test("unfinished tasks carry into the new day while routines and completed work stay put", () => {
+  const { SyncEngine } = environment().load("sync");
+  const engine = new SyncEngine();
+  engine.setUser("local:rollover");
+  const unfinished = engine.saveTask(task({ start_date: "2026-10-01" }));
+  const routine = engine.saveTask(
+    task({ start_date: "2026-10-01", is_routine: true }),
+  );
+  const completed = engine.saveTask(
+    task({ start_date: "2026-10-01", status: "completed" }),
+  );
+  assert.ok(
+    engine.rollOverUnfinishedTasks(new Date("2026-10-07T08:00:00+05:30")) >= 1,
+  );
+  const tasks = engine.getTasks();
+  assert.equal(
+    tasks.find((item) => item.id === unfinished.id).start_date,
+    "2026-10-07",
+  );
+  assert.equal(
+    tasks.find((item) => item.id === routine.id).start_date,
+    "2026-10-01",
+  );
+  assert.equal(
+    tasks.find((item) => item.id === completed.id).start_date,
+    "2026-10-01",
+  );
+});
 test("routine recurrence handles weekdays, expiry, monthly end and interval days", () => {
   const { routineOccursOn } = environment().load("dates");
   const r = {

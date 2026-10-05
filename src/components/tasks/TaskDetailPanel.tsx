@@ -17,6 +17,8 @@ import {
   Trash2,
   Play,
   Sparkles,
+  CalendarClock,
+  ArrowRight,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
@@ -42,6 +44,9 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
   const [deadline, setDeadline] = useState(
     task.deadline ? localDate(new Date(task.deadline)) : "",
   );
+  const [plannedDay, setPlannedDay] = useState(
+    task.start_date || localDate(),
+  );
   const [duration, setDuration] = useState(
     task.estimated_duration_minutes || 30,
   );
@@ -55,6 +60,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
     setPriority(task.priority);
     setStatus(task.status);
     setDeadline(task.deadline ? localDate(new Date(task.deadline)) : "");
+    setPlannedDay(task.start_date || localDate());
     setDuration(task.estimated_duration_minutes || 30);
     setProjectId(task.project_id || "");
     setSubtasks(task.subtasks || []);
@@ -67,6 +73,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
       description,
       priority,
       status,
+      start_date: plannedDay || null,
       deadline: deadline
         ? dateAtTime(
             deadline,
@@ -252,6 +259,24 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             </select>
           </div>
 
+          {/* Planned day */}
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground flex items-center space-x-1.5">
+              <CalendarClock className="w-3.5 h-3.5 text-lime-400" />
+              <span>Planned day</span>
+            </span>
+            <input
+              type="date"
+              aria-label="Task planned day"
+              value={plannedDay}
+              onChange={(e) => {
+                const moved = syncEngine.carryTaskTo(task.id, e.target.value);
+                setPlannedDay(moved?.start_date || e.target.value);
+              }}
+              className="bg-surface-100 border border-surface-border rounded px-2 py-0.5 text-foreground text-[11px]"
+            />
+          </div>
+
           {/* Deadline */}
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground flex items-center space-x-1.5">
@@ -304,6 +329,33 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             </div>
           </div>
         </div>
+
+        {!task.is_routine && !task.recurrence_rule && (
+          <div className="task-rollover-card">
+            <span className="task-rollover-icon">
+              <CalendarClock size={17} />
+            </span>
+            <div>
+              <strong>Automatic carry-over is on</strong>
+              <p>
+                If this is unfinished, Planny brings it into the next day. Its
+                deadline stays unchanged.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const nextDay = localDate(tomorrow);
+                const moved = syncEngine.carryTaskTo(task.id, nextDay);
+                setPlannedDay(moved?.start_date || nextDay);
+              }}
+            >
+              Move to tomorrow <ArrowRight size={13} />
+            </button>
+          </div>
+        )}
 
         {/* Description / Notes */}
         <div>

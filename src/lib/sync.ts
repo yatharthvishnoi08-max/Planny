@@ -265,9 +265,11 @@ export class SyncEngine {
       this.state.isOnline = false;
       this.notify();
     });
-    // Also refresh the local calendar day and reconcile reminders after sleep.
+    // Refresh the local calendar day, carry unfinished work forward, and
+    // reconcile reminders after sleep or when the date changes at midnight.
     window.setInterval(() => {
-      this.notify();
+      const moved = this.rollOverUnfinishedTasks();
+      if (!moved) this.notify();
       this.refreshReminders();
     }, 60000);
   }
@@ -316,6 +318,7 @@ export class SyncEngine {
       }
     }
     this.state.pendingChangesCount = this.queue.length;
+    this.rollOverUnfinishedTasks();
     this.refreshReminders();
     this.notify();
     if (this.cloud) {
@@ -517,6 +520,7 @@ export class SyncEngine {
           (remote as any)[mutation.table].push(mutation.payload);
       }
       this.data = remote;
+      this.rollOverUnfinishedTasks();
       this.state.lastSyncedAt = new Date();
       this.persist();
       this.refreshReminders();
@@ -567,9 +571,17 @@ export class SyncEngine {
     const id = uuid(task.id) ? task.id : crypto.randomUUID();
     const current = this.data.tasks.find((t) => t.id === id);
     const { project, tags, dependencies, ...fields } = task;
+    const today = localDate();
+    const shouldCarryNow =
+      (task.status === "todo" || task.status === "in_progress") &&
+      !task.is_routine &&
+      !task.recurrence_rule &&
+      !!task.start_date &&
+      task.start_date < today;
     return this.save("tasks", {
       ...fields,
       id,
+      start_date: shouldCarryNow ? today : task.start_date,
       completed_at:
         task.status === "completed"
           ? task.completed_at || new Date().toISOString()
@@ -592,6 +604,37 @@ export class SyncEngine {
           status: task.status === "completed" ? "todo" : "completed",
         })
       : null;
+  }
+  /**
+   * Move unfinished, previously planned work onto the current day.
+   * Deadlines are promises, so they remain untouched. Routines are daily
+   * check-ins and must never roll over into another date.
+   */
+  rollOverUnfinishedTasks(date = new Date()): number {
+    if (!this.userId) return 0;
+    const today = localDate(date);
+    const candidates = this.data.tasks.filter(
+      (task) =>
+        (task.status === "todo" || task.status === "in_progress") &&
+        !task.is_routine &&
+        !task.recurrence_rule &&
+        !!task.start_date &&
+        task.start_date < today,
+    );
+    for (const task of candidates)
+      this.saveTask({ ...task, start_date: today });
+    return candidates.length;
+  }
+  carryTaskTo(id: string, date: string): Task | null {
+    const task = this.data.tasks.find((item) => item.id === id);
+    if (
+      !task ||
+      task.is_routine ||
+      !!task.recurrence_rule ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(date)
+    )
+      return null;
+    return this.saveTask({ ...task, start_date: date });
   }
   deleteTask(id: string) {
     this.data.resources = this.data.resources.map((r) =>
