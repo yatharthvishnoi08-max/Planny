@@ -14,6 +14,9 @@ import {
   CalendarClock,
   Check,
   CheckCircle2,
+  ChevronDown,
+  Folder,
+  Inbox,
   MoreHorizontal,
   Play,
   Plus,
@@ -80,7 +83,7 @@ export function TodayView({
   const [filter, setFilter] = useState<"all" | "open" | "completed">("all");
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
-  const [showAll, setShowAll] = useState(false);
+  const [openProjects, setOpenProjects] = useState<Set<string> | null>(null);
   const [rescheduling, setRescheduling] = useState<string | null>(null);
   const [plannerOpen, setPlannerOpen] = useState(false);
   useEffect(() => {
@@ -281,7 +284,43 @@ export function TodayView({
       )}
     </motion.div>
   );
-  const visiblePending = showAll ? pending : pending.slice(0, 8);
+  const filteredTasks = useMemo(() => {
+    if (filter === "open") return pending;
+    if (filter === "completed") return completed;
+    return [...pending, ...completed];
+  }, [completed, filter, pending]);
+  const projectGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      { id: string; title: string; color: string; tasks: Task[] }
+    >();
+    filteredTasks.forEach((task) => {
+      if (!task.project_id) return;
+      const existing = groups.get(task.project_id);
+      if (existing) {
+        existing.tasks.push(task);
+        return;
+      }
+      groups.set(task.project_id, {
+        id: task.project_id,
+        title: task.project?.title || "Project",
+        color: task.project?.color || "#9cf177",
+        tasks: [task],
+      });
+    });
+    return [...groups.values()];
+  }, [filteredTasks]);
+  const unassignedTasks = filteredTasks.filter((task) => !task.project_id);
+  const toggleProject = (projectId: string, defaultOpen: boolean) => {
+    setOpenProjects((current) => {
+      const next = new Set(
+        current ?? (defaultOpen && projectGroups[0] ? [projectGroups[0].id] : []),
+      );
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
+      return next;
+    });
+  };
   return (
     <div className="today-page smart-today-page">
       <header className="smart-today-header">
@@ -365,12 +404,87 @@ export function TodayView({
               ))}
             </div>
           </div>
-          <AnimatePresence mode="popLayout">
-            {filter !== "completed" &&
-              visiblePending.map((task) => taskCard(task))}
-            {filter !== "open" && completed.map((task) => taskCard(task, true))}
-          </AnimatePresence>
-          {!pending.length && filter !== "completed" && (
+          <div className="today-task-organizer">
+            <section className="project-task-folders" aria-label="Tasks by project">
+              <div className="organizer-column-heading">
+                <div>
+                  <Folder size={15} />
+                  <strong>Projects</strong>
+                </div>
+                <span>{projectGroups.length} folders</span>
+              </div>
+              {projectGroups.map((group, index) => {
+                const isOpen = openProjects === null ? index === 0 : openProjects.has(group.id);
+                const completedCount = group.tasks.filter(
+                  (task) => task.status === "completed",
+                ).length;
+                const minutes = group.tasks.reduce(
+                  (sum, task) => sum + task.estimated_duration_minutes,
+                  0,
+                );
+                return (
+                  <section className="project-task-folder" key={group.id}>
+                    <button
+                      className="project-folder-trigger"
+                      onClick={() => toggleProject(group.id, index === 0)}
+                      aria-expanded={isOpen}
+                    >
+                      <span
+                        className="project-folder-icon"
+                        style={{ borderColor: group.color, color: group.color }}
+                      >
+                        <Folder size={16} />
+                      </span>
+                      <span className="project-folder-title">
+                        <small>PROJECT</small>
+                        <strong>{group.title}</strong>
+                      </span>
+                      <span className="project-folder-summary">
+                        {completedCount}/{group.tasks.length} done · {formatMinutes(minutes)}
+                      </span>
+                      <ChevronDown size={16} className={isOpen ? "is-open" : ""} />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          className="project-folder-tasks"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                        >
+                          {group.tasks.map((task) =>
+                            taskCard(task, task.status === "completed"),
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </section>
+                );
+              })}
+              {!projectGroups.length && (
+                <div className="organizer-empty">No project tasks in this view.</div>
+              )}
+            </section>
+            <aside className="unassigned-task-rail" aria-label="Tasks without a project">
+              <div className="organizer-column-heading">
+                <div>
+                  <Inbox size={15} />
+                  <strong>No project</strong>
+                </div>
+                <span>{unassignedTasks.length} tasks</span>
+              </div>
+              <AnimatePresence mode="popLayout">
+                {unassignedTasks.map((task) =>
+                  taskCard(task, task.status === "completed"),
+                )}
+              </AnimatePresence>
+              {!unassignedTasks.length && (
+                <div className="organizer-empty">Everything is neatly filed.</div>
+              )}
+            </aside>
+          </div>
+          {!filteredTasks.length && filter !== "completed" && (
             <div className="compact-empty-state">
               <CheckCircle2 size={20} />
               <div>
@@ -379,15 +493,6 @@ export function TodayView({
               </div>
               <button onClick={onOpenAITaskModal}>Add task</button>
             </div>
-          )}
-          {pending.length > 8 && filter !== "completed" && (
-            <button
-              className="show-more-tasks"
-              onClick={() => setShowAll(!showAll)}
-            >
-              {showAll ? "Show less" : `Show ${pending.length - 8} more tasks`}
-              <ArrowRight size={13} />
-            </button>
           )}
           <form className="smart-inline-add" onSubmit={add}>
             <Plus size={16} />
