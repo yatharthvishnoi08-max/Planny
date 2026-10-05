@@ -120,9 +120,10 @@ export const App: React.FC = () => {
         setIsSearchOpen((prev) => !prev);
       }
       if (e.key === "Tab") {
-        const dialog = Array.from(
+        const dialogs = Array.from(
           document.querySelectorAll<HTMLElement>('[role="dialog"]'),
-        ).at(-1);
+        );
+        const dialog = dialogs[dialogs.length - 1];
         const controls = dialog
           ? Array.from(
               dialog.querySelectorAll<HTMLElement>(

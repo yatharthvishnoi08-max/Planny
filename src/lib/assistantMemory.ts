@@ -84,7 +84,15 @@ export async function saveAssistantMemory(userId: string, memory: AssistantMemor
   const next = {
     ...memory,
     messages: memory.messages.slice(-200),
-    facts: extractFacts(memory.messages.filter((message) => message.role === "user").at(-1)?.content || "", memory.facts),
+    facts: (() => {
+      const userMessages = memory.messages.filter(
+        (message) => message.role === "user",
+      );
+      return extractFacts(
+        userMessages[userMessages.length - 1]?.content || "",
+        memory.facts,
+      );
+    })(),
     summary: compact(memory.messages) || memory.summary,
   };
   writeLocal(userId, next);
@@ -99,7 +107,7 @@ export async function saveAssistantMemory(userId: string, memory: AssistantMemor
       updated_at: new Date().toISOString(),
     });
     if (conversationError) throw conversationError;
-    const latest = next.messages.at(-1);
+    const latest = next.messages[next.messages.length - 1];
     if (latest) {
       const { error } = await supabase.from("ai_messages").upsert({
         id: latest.id, conversation_id: next.conversationId, user_id: userId,
