@@ -4,7 +4,15 @@ import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 const db = new PGlite();
 await db.exec(
-  `CREATE SCHEMA auth; CREATE ROLE anon; CREATE ROLE authenticated; CREATE TABLE auth.users (id uuid PRIMARY KEY,email text,raw_user_meta_data jsonb); CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; CREATE PUBLICATION supabase_realtime;`,
+  `CREATE SCHEMA auth; CREATE SCHEMA storage; CREATE ROLE anon; CREATE ROLE authenticated;
+   CREATE TABLE auth.users (id uuid PRIMARY KEY,email text,raw_user_meta_data jsonb);
+   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+   CREATE TABLE storage.buckets (id text PRIMARY KEY,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+   CREATE TABLE storage.objects (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),bucket_id text,name text);
+   ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+   CREATE FUNCTION storage.foldername(text) RETURNS text[] LANGUAGE sql IMMUTABLE AS $$ SELECT (string_to_array($1,'/'))[1:array_length(string_to_array($1,'/'),1)-1] $$;
+   CREATE FUNCTION storage.extension(text) RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT split_part($1,'.',array_length(string_to_array($1,'.'),1)) $$;
+   CREATE PUBLICATION supabase_realtime;`,
 );
 const root = fileURLToPath(new URL("../supabase/migrations/", import.meta.url));
 // Supabase provisions this extension; gen_random_uuid is native to PostgreSQL.
@@ -20,7 +28,10 @@ await db.exec(
   fs.readFileSync(root + "20261001020000_managed_ai.sql", "utf8"),
 );
 await db.exec(
-  `GRANT USAGE ON SCHEMA public,auth TO authenticated; GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth TO authenticated; INSERT INTO auth.users VALUES ('11111111-1111-4111-8111-111111111111','a@test.invalid','{}'),('22222222-2222-4222-8222-222222222222','b@test.invalid','{}'); SET ROLE authenticated; SET request.jwt.claim.sub='11111111-1111-4111-8111-111111111111';`,
+  fs.readFileSync(root + "20261005010000_pdf_storage.sql", "utf8"),
+);
+await db.exec(
+  `GRANT USAGE ON SCHEMA public,auth,storage TO authenticated; GRANT ALL ON ALL TABLES IN SCHEMA public,storage TO authenticated; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth,storage TO authenticated; INSERT INTO auth.users VALUES ('11111111-1111-4111-8111-111111111111','a@test.invalid','{}'),('22222222-2222-4222-8222-222222222222','b@test.invalid','{}'); SET ROLE authenticated; SET request.jwt.claim.sub='11111111-1111-4111-8111-111111111111';`,
 );
 const owner = "11111111-1111-4111-8111-111111111111",
   id = "33333333-3333-4333-8333-333333333333";
@@ -59,6 +70,21 @@ await db.query("SELECT save_task_with_subtasks($1::jsonb,$2::jsonb)", [
 ]);
 assert.equal((await db.query("SELECT * FROM tasks")).rows.length, 1);
 assert.equal((await db.query("SELECT * FROM subtasks")).rows.length, 1);
+assert.equal(
+  (await db.query("SELECT file_size_limit FROM storage.buckets WHERE id='user-pdfs'"))
+    .rows[0].file_size_limit,
+  104857600,
+);
+await db.query(
+  "INSERT INTO storage.objects(bucket_id,name) VALUES ('user-pdfs',$1)",
+  [`${owner}/notes.pdf`],
+);
+await assert.rejects(
+  db.query(
+    "INSERT INTO storage.objects(bucket_id,name) VALUES ('user-pdfs',$1)",
+    ["22222222-2222-4222-8222-222222222222/private.pdf"],
+  ),
+);
 await assert.rejects(
   db.query("SELECT save_task_with_subtasks($1::jsonb,$2::jsonb)", [
     JSON.stringify({ ...task, title: "Must rollback" }),

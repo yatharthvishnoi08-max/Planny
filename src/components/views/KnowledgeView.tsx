@@ -11,8 +11,19 @@ import {
   ExternalLink,
   Trash2,
   CheckCircle2,
+  Upload,
+  File as FileIcon,
+  Loader2,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
+import {
+  deletePdf,
+  formatFileSize,
+  isStoredPdf,
+  signedPdfUrl,
+  uploadPdf,
+  validatePdf,
+} from "../../lib/pdfStorage";
 
 interface KnowledgeViewProps {
   notes: Note[];
@@ -30,7 +41,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
   >("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [modalType, setModalType] = useState<"note" | "video">("note");
+  const [modalType, setModalType] = useState<"note" | "video" | "pdf">("note");
 
   // Form states
   const [editingNote, setEditingNote] = useState<Note | null>(null);
@@ -40,6 +51,8 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
   const [url, setUrl] = useState("");
   const [noteType, setNoteType] = useState<NoteType>("note");
   const [durationMins, setDurationMins] = useState(25);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!initialItemId) return;
@@ -91,9 +104,10 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
     return true;
   });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+    setError("");
 
     if (modalType === "note") {
       syncEngine.saveNote({
@@ -107,7 +121,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
         created_at: editingNote?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
-    } else {
+    } else if (modalType === "video") {
       let parsed: URL;
       try {
         parsed = new URL(url);
@@ -136,12 +150,78 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
+    } else {
+      if (!pdfFile) {
+        setError("Choose a PDF to upload.");
+        return;
+      }
+      const validation = validatePdf(pdfFile);
+      if (validation) {
+        setError(validation);
+        return;
+      }
+      setUploading(true);
+      try {
+        const storedUrl = await uploadPdf(pdfFile);
+        syncEngine.saveResource({
+          id: crypto.randomUUID(),
+          user_id: syncEngine.getUserId(),
+          project_id: null,
+          task_id: null,
+          title: title.trim(),
+          url: storedUrl,
+          resource_type: "document",
+          duration_minutes: null,
+          notes: content,
+          is_completed: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      } catch (uploadError) {
+        setError(
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Could not upload this PDF.",
+        );
+        setUploading(false);
+        return;
+      }
     }
 
     setTitle("");
     setContent("");
     setUrl("");
+    setPdfFile(null);
+    setUploading(false);
     setShowAddModal(false);
+  };
+
+  const openPdf = async (resource: Resource) => {
+    if (!resource.url) return;
+    const preview = window.open("about:blank", "_blank");
+    try {
+      const signedUrl = await signedPdfUrl(resource.url);
+      if (preview) preview.location.replace(signedUrl);
+      else window.open(signedUrl, "_blank", "noopener,noreferrer");
+    } catch (openError) {
+      preview?.close();
+      setError(
+        openError instanceof Error ? openError.message : "Could not open PDF.",
+      );
+    }
+  };
+
+  const removeResource = async (resource: Resource) => {
+    try {
+      if (resource.url && isStoredPdf(resource.url)) await deletePdf(resource.url);
+      syncEngine.deleteResource(resource.id);
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Could not delete this file.",
+      );
+    }
   };
 
   const extractYouTubeId = (videoUrl: string | null): string | null => {
@@ -174,7 +254,24 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="knowledge-actions flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => {
+              setEditingNote(null);
+              setTitle("");
+              setContent("");
+              setUrl("");
+              setPdfFile(null);
+              setError("");
+              setModalType("pdf");
+              setShowAddModal(true);
+            }}
+            className="knowledge-pdf-button"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>Add PDF</span>
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -307,6 +404,8 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                   <div className="flex items-center space-x-2">
                     {res.resource_type === "youtube" ? (
                       <Video className="w-4 h-4 text-red-400" />
+                    ) : res.resource_type === "document" ? (
+                      <FileIcon className="w-4 h-4 text-emerald-400" />
                     ) : (
                       <Bookmark className="w-4 h-4 text-sky-400" />
                     )}
@@ -340,7 +439,16 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
               </div>
 
               <div className="pt-3 border-t border-surface-border flex items-center justify-between mt-2 text-xs">
-                {res.url ? (
+                {res.url && isStoredPdf(res.url) ? (
+                  <button
+                    type="button"
+                    onClick={() => void openPdf(res)}
+                    className="text-emerald-400 hover:underline flex items-center space-x-1 text-[11px]"
+                  >
+                    <span>Open PDF</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                ) : res.url ? (
                   <a
                     href={res.url}
                     target="_blank"
@@ -368,10 +476,16 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                         : "bg-surface-200 text-muted-foreground border-surface-border"
                     }`}
                   >
-                    {res.is_completed ? "Watched" : "To Watch"}
+                    {res.resource_type === "document"
+                      ? res.is_completed
+                        ? "Reviewed"
+                        : "To review"
+                      : res.is_completed
+                        ? "Watched"
+                        : "To Watch"}
                   </button>
                   <button
-                    onClick={() => syncEngine.deleteResource(res.id)}
+                    onClick={() => void removeResource(res)}
                     className="text-muted-foreground hover:text-red-400 p-1"
                     title="Delete"
                   >
@@ -391,6 +505,8 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
             <h3 className="text-base font-medium text-foreground mb-3">
               {modalType === "video"
                 ? "Add Video Task / Resource"
+                : modalType === "pdf"
+                  ? "Add a PDF"
                 : editingNote
                   ? "Edit note"
                   : "New note"}
@@ -411,11 +527,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={
-                    modalType === "video"
-                      ? "e.g. Watch Physics de Broglie Lecture"
-                      : "Title"
-                  }
+                  placeholder={modalType === "video" ? "e.g. Watch Physics de Broglie Lecture" : modalType === "pdf" ? "e.g. Physics chapter 4 notes" : "Title"}
                   className="w-full bg-surface-200 border border-surface-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -453,6 +565,38 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                 </>
               )}
 
+              {modalType === "pdf" && (
+                <div className="pdf-upload-field">
+                  <label htmlFor="knowledge-pdf">PDF file · maximum 100 MB</label>
+                  <input
+                    id="knowledge-pdf"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    disabled={uploading}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      setError("");
+                      setPdfFile(file);
+                      if (!file) return;
+                      const validation = validatePdf(file);
+                      if (validation) {
+                        setError(validation);
+                        setPdfFile(null);
+                        event.currentTarget.value = "";
+                        return;
+                      }
+                      if (!title.trim()) setTitle(file.name.replace(/\.pdf$/i, ""));
+                    }}
+                  />
+                  <label htmlFor="knowledge-pdf" className={pdfFile ? "has-file" : ""}>
+                    <span>{pdfFile ? <FileIcon size={20} /> : <Upload size={20} />}</span>
+                    <strong>{pdfFile ? pdfFile.name : "Choose a PDF"}</strong>
+                    <small>{pdfFile ? `${formatFileSize(pdfFile.size)} · ready to upload` : "PDF only · securely stored in your account"}</small>
+                  </label>
+                  {uploading && <div className="pdf-uploading"><Loader2 size={14} className="animate-spin" /><span>Uploading {pdfFile ? formatFileSize(pdfFile.size) : "PDF"}…</span></div>}
+                </div>
+              )}
+
               {modalType === "note" && (
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">
@@ -487,6 +631,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
               <div className="flex justify-end space-x-2 pt-2">
                 <button
                   type="button"
+                  disabled={uploading}
                   onClick={() => setShowAddModal(false)}
                   className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
                 >
@@ -494,9 +639,10 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium"
+                  disabled={uploading || (modalType === "pdf" && !pdfFile)}
+                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium"
                 >
-                  Save
+                  {uploading ? "Uploading…" : modalType === "pdf" ? "Upload PDF" : "Save"}
                 </button>
               </div>
             </form>

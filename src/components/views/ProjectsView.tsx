@@ -145,15 +145,12 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, initialPro
 
       {currentProject && <main className="project-workspace">
         <section className="project-title-row">
-          <div><div className="project-title-line"><h2>{currentProject.title}</h2><span className={`project-health ${health.tone}`}><i /> {health.label}</span></div><p>{currentProject.description || "Give this project a clear outcome."}</p></div>
+          <div><div className="project-title-line"><h2>{currentProject.title}</h2></div><p>{currentProject.description || "Give this project a clear outcome."}</p></div>
           <div className="project-title-actions"><label>Rank <input type="number" min="1" max={Math.max(1, projects.length)} value={projectPriority(currentProject, 1)} onChange={(event) => moveProjectPriority(projects, currentProject.id, Number(event.target.value)).forEach((project) => syncEngine.saveProject(project))} /></label><button onClick={() => onAddTask(currentProject.id)}><Plus size={15} /> Add task</button><button className="icon-only" aria-label="Delete project" onClick={() => setProjectToDelete(currentProject)}><Trash2 size={15} /></button></div>
         </section>
 
-        <section className="project-pulse-grid">
-          <article className={`project-pulse-card pulse-${health.tone}`}><span><Zap size={16} /> Project pulse</span><strong>{health.label}</strong><p>{health.message}</p>{pendingTasks[0] && <button onClick={() => onSelectTask(pendingTasks[0])}>Open next task <ArrowRight size={13} /></button>}</article>
+        <section className="project-pulse-grid progress-only">
           <article className="project-pulse-card"><span><Target size={16} /> Progress</span><strong>{progressPercent}% <small>complete</small></strong><div className="project-big-progress"><i style={{ width: `${progressPercent}%` }} /></div><p>{completedCount} finished · {pendingTasks.length} remaining</p></article>
-          <article className="project-pulse-card"><span><CalendarDays size={16} /> Reality check</span><strong>{formatMinutes(remainingMinutes)} <small>left</small></strong><p>{daysLeft === null ? "Set a target date to test whether this plan fits." : daysLeft < 0 ? `${Math.abs(daysLeft)} days past the target date.` : `${daysLeft} days left · ${capacityRatio !== null ? `${Math.round(capacityRatio * 100)}% of capacity needed` : "add weekly capacity"}`}</p><input type="date" aria-label="Project target date" value={planning.targetDate} onChange={(event) => savePlanning({ targetDate: event.target.value })} /></article>
-          <article className="project-pulse-card"><span><Flag size={16} /> This week</span><strong>{formatMinutes(weeklyFocusedMinutes)} <small>focused</small></strong><div className="project-big-progress"><i style={{ width: `${Math.min(100, planning.weeklyMinutes ? (weeklyFocusedMinutes / planning.weeklyMinutes) * 100 : 0)}%` }} /></div><label>Weekly target <input type="number" min="0" step="30" value={planning.weeklyMinutes} onChange={(event) => savePlanning({ weeklyMinutes: Number(event.target.value) })} /> min</label></article>
         </section>
 
         <section className="project-columns">
