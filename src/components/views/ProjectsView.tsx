@@ -7,6 +7,9 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  Trash2,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
@@ -41,6 +44,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newPriority, setNewPriority] = useState(1);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   const rankedProjects = projects
     .map((project, index) => ({
@@ -92,7 +96,10 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setShowNewProjectModal(false);
+      if (event.key === "Escape") {
+        setShowNewProjectModal(false);
+        setProjectToDelete(null);
+      }
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
@@ -178,6 +185,16 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <div className="project-rank-corner">
                   <span>#{projectRank}</span>
                   <small>{pPct}%</small>
+                  <button
+                    type="button"
+                    aria-label={`Delete ${proj.title}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setProjectToDelete(proj);
+                    }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
 
@@ -256,12 +273,20 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             </div>
           </div>
 
-          <button
-            className="secondary-button mb-5"
-            onClick={() => onAddTask(currentProject.id)}
-          >
-            <Plus size={16} /> Add task to project
-          </button>
+          <div className="project-detail-actions">
+            <button
+              className="secondary-button"
+              onClick={() => onAddTask(currentProject.id)}
+            >
+              <Plus size={16} /> Add task to project
+            </button>
+            <button
+              className="project-delete-button"
+              onClick={() => setProjectToDelete(currentProject)}
+            >
+              <Trash2 size={14} /> Delete project
+            </button>
+          </div>
 
           {/* Task list in project */}
           <div className="space-y-2">
@@ -380,6 +405,62 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {projectToDelete && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
+          onClick={(event) =>
+            event.target === event.currentTarget && setProjectToDelete(null)
+          }
+        >
+          <section
+            className="project-delete-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-project-title"
+          >
+            <button
+              className="project-delete-close"
+              aria-label="Cancel project deletion"
+              onClick={() => setProjectToDelete(null)}
+            >
+              <X size={17} />
+            </button>
+            <span className="project-delete-icon">
+              <AlertTriangle size={21} />
+            </span>
+            <div>
+              <span className="page-eyebrow">DELETE PROJECT</span>
+              <h3 id="delete-project-title">Delete “{projectToDelete.title}”?</h3>
+              <p>
+                The project will be removed. Its{" "}
+                {
+                  tasks.filter(
+                    (task) => task.project_id === projectToDelete.id,
+                  ).length
+                }{" "}
+                tasks will stay in Planny under No Project.
+              </p>
+            </div>
+            <div className="project-delete-actions">
+              <button onClick={() => setProjectToDelete(null)}>Keep project</button>
+              <button
+                className="danger"
+                onClick={() => {
+                  const next = rankedProjects.find(
+                    ({ project }) => project.id !== projectToDelete.id,
+                  )?.project;
+                  syncEngine.deleteProject(projectToDelete.id);
+                  setSelectedProjectId(next?.id || "");
+                  setProjectToDelete(null);
+                }}
+              >
+                <Trash2 size={14} /> Delete project
+              </button>
+            </div>
+          </section>
         </div>
       )}
     </div>

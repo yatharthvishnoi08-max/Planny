@@ -253,6 +253,25 @@ test("project priorities use numeric ranks with one as the highest", () => {
   assert.equal(projectPriority(ranked), 1);
   assert.equal(withProjectPriority(project, 200).icon, "folder|priority:99");
 });
+test("deleting a project keeps its tasks and removes their project link", () => {
+  const { SyncEngine } = environment().load("sync");
+  const engine = new SyncEngine();
+  engine.setUser("local:project-delete");
+  const project = engine.saveProject({
+    id: randomUUID(),
+    title: "Temporary project",
+  });
+  const linked = engine.saveTask(task({ project_id: project.id }));
+  assert.equal(engine.deleteProject(project.id), true);
+  assert.equal(
+    engine.getProjects().some((item) => item.id === project.id),
+    false,
+  );
+  assert.equal(
+    engine.getTasks().find((item) => item.id === linked.id).project_id,
+    null,
+  );
+});
 test("account switch clears visible data and restores only its own workspace", () => {
   const { SyncEngine } = environment().load("sync");
   const engine = new SyncEngine();

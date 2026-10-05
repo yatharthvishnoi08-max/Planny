@@ -720,6 +720,15 @@ export class SyncEngine {
   saveProject(row: Project) {
     return this.save("projects", row);
   }
+  deleteProject(id: string) {
+    if (!this.data.projects.some((project) => project.id === id)) return false;
+    // The tasks survive project deletion and return to the unassigned pool.
+    this.data.tasks = this.data.tasks.map((task) =>
+      task.project_id === id ? { ...task, project_id: null } : task,
+    );
+    this.remove("projects", id);
+    return true;
+  }
   getBrainDumps() {
     return [...this.data.brain_dumps];
   }
