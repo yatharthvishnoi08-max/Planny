@@ -3048,6 +3048,58 @@ button:active:not(:disabled) {
   from { opacity: 0; transform: translateY(-5px) scale(.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* Numeric project ranking: lower numbers stay visibly closer to the top. */
+.project-rank-corner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.project-rank-corner span {
+  display: grid;
+  min-width: 27px;
+  height: 22px;
+  place-items: center;
+  padding: 0 6px;
+  border: 1px solid #b6f36b30;
+  border-radius: 7px;
+  background: #b6f36b0c;
+  color: #c7fb99;
+  font: 650 10px/1 "Inter", sans-serif;
+}
+.project-rank-corner small {
+  color: hsl(var(--muted-foreground));
+  font: 10px/1 ui-monospace, monospace;
+}
+.project-priority-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 7px;
+  border: 1px solid #b6f36b20;
+  border-radius: 8px;
+  background: #b6f36b09;
+  color: hsl(var(--muted-foreground));
+  font-size: 8px;
+}
+.project-priority-control input {
+  width: 38px;
+  padding: 2px 3px;
+  border: 0;
+  border-radius: 5px;
+  outline: 0;
+  background: hsl(var(--surface-100));
+  color: #c7fb99;
+  font: 650 11px/1.2 ui-monospace, monospace;
+  text-align: center;
+}
+.project-priority-control input:focus {
+  box-shadow: 0 0 0 2px #b6f36b20;
+}
+.project-priority-control small { opacity: .7; }
+@media (max-width: 520px) {
+  .project-priority-control small { display: none; }
+}
 @media (max-width: 767px) {
   .shell-header { margin: 7px 8px 0; border-radius: 15px; }
 }

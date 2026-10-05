@@ -240,6 +240,19 @@ test("routine recurrence handles weekdays, expiry, monthly end and interval days
     true,
   );
 });
+test("project priorities use numeric ranks with one as the highest", () => {
+  const { projectPriority, withProjectPriority } =
+    environment().load("projectPriority");
+  const project = {
+    id: randomUUID(),
+    icon: "folder",
+    title: "Launch",
+  };
+  assert.equal(projectPriority(project, 4), 4);
+  const ranked = withProjectPriority(project, 1);
+  assert.equal(projectPriority(ranked), 1);
+  assert.equal(withProjectPriority(project, 200).icon, "folder|priority:99");
+});
 test("account switch clears visible data and restores only its own workspace", () => {
   const { SyncEngine } = environment().load("sync");
   const engine = new SyncEngine();

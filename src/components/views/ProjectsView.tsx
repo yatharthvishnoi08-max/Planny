@@ -11,6 +11,10 @@ import {
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
 import { isPending, localDate } from "../../lib/dates";
+import {
+  projectPriority,
+  withProjectPriority,
+} from "../../lib/projectPriority";
 
 interface ProjectsViewProps {
   projects: Project[];
@@ -36,9 +40,21 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [newPriority, setNewPriority] = useState(1);
+
+  const rankedProjects = projects
+    .map((project, index) => ({
+      project,
+      priority: projectPriority(project, index + 1),
+      originalIndex: index,
+    }))
+    .sort(
+      (a, b) => a.priority - b.priority || a.originalIndex - b.originalIndex,
+    );
 
   const currentProject =
-    projects.find((p) => p.id === selectedProjectId) || projects[0];
+    projects.find((p) => p.id === selectedProjectId) ||
+    rankedProjects[0]?.project;
   const projectTasks = tasks.filter((t) => t.project_id === currentProject?.id);
 
   const completedCount = projectTasks.filter(
@@ -61,7 +77,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       title: newTitle.trim(),
       description: newDesc.trim() || null,
       color: "#6366f1",
-      icon: "folder",
+      icon: `folder|priority:${newPriority}`,
       status: "active",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -70,6 +86,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
     setSelectedProjectId(created.id);
     setNewTitle("");
     setNewDesc("");
+    setNewPriority(1);
     setShowNewProjectModal(false);
   };
 
@@ -96,7 +113,20 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
         <button
           type="button"
-          onClick={() => setShowNewProjectModal(true)}
+          onClick={() => {
+            setNewPriority(
+              Math.min(
+                99,
+                Math.max(
+                  0,
+                  ...projects.map((project, index) =>
+                    projectPriority(project, index + 1),
+                  ),
+                ) + 1,
+              ),
+            );
+            setShowNewProjectModal(true);
+          }}
           className="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -106,7 +136,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
       {/* Project Selector Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-8">
-        {projects.map((proj) => {
+        {rankedProjects.map(({ project: proj, priority: projectRank }) => {
           const isSelected = proj.id === currentProject?.id;
           const pTasks = tasks.filter((t) => t.project_id === proj.id);
           const pDone = pTasks.filter((t) => t.status === "completed").length;
@@ -145,9 +175,10 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     {proj.title}
                   </h3>
                 </div>
-                <span className="text-[11px] font-mono text-muted-foreground">
-                  {pPct}%
-                </span>
+                <div className="project-rank-corner">
+                  <span>#{projectRank}</span>
+                  <small>{pPct}%</small>
+                </div>
               </div>
 
               {proj.description && (
@@ -190,6 +221,30 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <h2 className="text-lg font-medium text-foreground">
                   {currentProject.title}
                 </h2>
+                <label className="project-priority-control">
+                  <span>Priority</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    aria-label="Project priority number"
+                    value={projectPriority(
+                      currentProject,
+                      projects.findIndex(
+                        (project) => project.id === currentProject.id,
+                      ) + 1,
+                    )}
+                    onChange={(event) =>
+                      syncEngine.saveProject(
+                        withProjectPriority(
+                          currentProject,
+                          Number(event.target.value),
+                        ),
+                      )
+                    }
+                  />
+                  <small>1 = highest</small>
+                </label>
                 <span className="text-xs font-mono px-2 py-0.5 rounded bg-surface-200 text-muted-foreground border border-surface-border">
                   {progressPercent}% Complete
                 </span>
@@ -287,6 +342,25 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   onChange={(e) => setNewDesc(e.target.value)}
                   placeholder="Goals, links, notes..."
                   className="w-full bg-surface-200 border border-surface-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  Priority number{" "}
+                  <span className="opacity-60">(1 = highest)</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  required
+                  value={newPriority}
+                  onChange={(event) =>
+                    setNewPriority(
+                      Math.max(1, Math.min(99, Number(event.target.value) || 1)),
+                    )
+                  }
+                  className="w-full bg-surface-200 border border-surface-border rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-indigo-500"
                 />
               </div>
               <div className="flex justify-end space-x-2 pt-2">
