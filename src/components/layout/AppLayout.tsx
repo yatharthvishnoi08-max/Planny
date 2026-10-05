@@ -413,16 +413,25 @@ export function AppLayout({
           <ChartNoAxesCombined size={20} />
           <span>Focus</span>
         </button>
-        <button onClick={() => setMore(true)}>
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={more}
+          aria-controls="mobile-workspace-menu"
+          onClick={() => setMore((isOpen) => !isOpen)}
+        >
           <MoreHorizontal size={20} />
           <span>More</span>
         </button>
       </nav>
-      {more && (
+      {more &&
+        createPortal(
         <div className="mobile-sheet-backdrop" onClick={() => setMore(false)}>
           <div
+            id="mobile-workspace-menu"
             className="mobile-sheet"
             role="dialog"
+            aria-modal="true"
             aria-label="Navigation"
             onClick={(e) => e.stopPropagation()}
           >
@@ -441,7 +450,8 @@ export function AppLayout({
               Settings
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
