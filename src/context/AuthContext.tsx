@@ -28,7 +28,6 @@ interface AuthContextType {
     taskBehavior: string;
     routines: Array<{ title: string; time: string }>;
   }) => Promise<void>;
-  updateTheme: (theme: "dark" | "light" | "system") => void;
 }
 const makeProfile = (user: User): Profile => ({
   id: user.id,
@@ -38,7 +37,7 @@ const makeProfile = (user: User): Profile => ({
   start_of_day: "08:00",
   end_of_day: "22:00",
   reminder_preference: "at_time",
-  theme: "dark",
+  theme: "light",
   managed_areas: ["Study", "Work", "Personal"],
   onboarding_completed: true,
   onboarding_data: {},
@@ -91,10 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!alive || current !== revision) return;
         if (localStorage.getItem(`planny_onboarding_complete:${next.id}`))
           value = { ...value, onboarding_completed: true };
-        if (!localStorage.getItem(`planny_afterhours:${next.id}`)) {
-          value = { ...value, theme: "dark" };
-          localStorage.setItem(`planny_afterhours:${next.id}`, "1");
-        }
+        value = { ...value, theme: "light" };
         setProfile(value);
         try {
           localStorage.setItem(
@@ -146,18 +142,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
   useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const apply = () => {
-      const dark =
-        profile?.theme !== "light" &&
-        (profile?.theme !== "system" || media.matches);
-      document.documentElement.classList.toggle("dark", dark);
-      document.documentElement.classList.toggle("light", !dark);
-    };
-    apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
-  }, [profile?.theme]);
+    document.documentElement.classList.remove("dark");
+    document.documentElement.classList.add("light");
+    delete document.documentElement.dataset.style;
+    localStorage.removeItem("orbit_interface_style");
+  }, []);
   const localSignIn = (email: string, name?: string, onboarding = true) => {
     // Local accounts are device workspaces, not password-protected cloud identities.
     const id = `local:${email.trim().toLowerCase()}`;
@@ -244,20 +233,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await saveProfile(value);
     }
   };
-  const updateTheme = (theme: "dark" | "light" | "system") => {
-    if (!profile) return;
-    const value = { ...profile, theme };
-    setProfile(value);
-    localStorage.setItem(`orbit_profile:${value.id}`, JSON.stringify(value));
-    if (isRealSupabaseConfigured())
-      void supabase
-        .from("profiles")
-        .update({ theme })
-        .eq("id", value.id)
-        .then(({ error }) => {
-          if (error) console.warn("Theme cloud sync failed", error.message);
-        });
-  };
   return (
     <AuthContext.Provider
       value={{
@@ -273,7 +248,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         resetPassword,
         completeOnboarding,
-        updateTheme,
       }}
     >
       {children}

@@ -4,9 +4,6 @@ import { useAuth } from "../../context/AuthContext";
 import {
   User,
   Bell,
-  Moon,
-  Sun,
-  Monitor,
   Sparkles,
   Database,
   Download,
@@ -23,11 +20,7 @@ import {
 } from "../../lib/notifications";
 
 export const SettingsView: React.FC = () => {
-  const { user, profile, signOut, updateTheme } = useAuth();
-
-  const [activeTheme, setActiveTheme] = useState<"dark" | "light" | "system">(
-    profile?.theme || "dark",
-  );
+  const { user, profile, signOut } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
@@ -124,39 +117,6 @@ export const SettingsView: React.FC = () => {
               {profile?.start_of_day} – {profile?.end_of_day}
             </span>
           </div>
-        </div>
-      </div>
-
-      {/* Appearance */}
-      <div className="bg-surface-100 border border-surface-border rounded-2xl p-5 shadow-sm">
-        <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-          <Moon className="w-4 h-4 text-indigo-400" />
-          <span>Appearance</span>
-        </div>
-
-        <div className="flex items-center gap-6">
-          {[
-            { id: "dark", label: "Dark Mode", icon: Moon },
-            { id: "light", label: "Light Mode", icon: Sun },
-            { id: "system", label: "System", icon: Monitor },
-          ].map((theme) => (
-            <button
-              key={theme.id}
-              type="button"
-              onClick={() => {
-                setActiveTheme(theme.id as any);
-                updateTheme(theme.id as any);
-              }}
-              className={`py-2 border-b-2 flex items-center justify-center space-x-2 transition-colors ${
-                activeTheme === theme.id
-                  ? "border-indigo-500 text-indigo-300"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <theme.icon className="w-4 h-4" />
-              <span className="text-xs font-medium">{theme.label}</span>
-            </button>
-          ))}
         </div>
       </div>
 

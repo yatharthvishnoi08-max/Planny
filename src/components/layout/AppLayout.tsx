@@ -68,13 +68,6 @@ export function AppLayout({
   const dayGreeting = hour < 12 ? "Morning" : hour < 17 ? "Afternoon" : "Evening";
   const [guide, setGuide] = useState(false);
   const [more, setMore] = useState(false);
-  const [style, setStyle] = useState(
-    () => localStorage.getItem("orbit_interface_style") || "clear",
-  );
-  useEffect(() => {
-    document.documentElement.dataset.style = style;
-    localStorage.setItem("orbit_interface_style", style);
-  }, [style]);
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -271,18 +264,6 @@ export function AppLayout({
               <HelpCircle size={16} />
               <span>Start here</span>
             </button>
-            <label className="style-selector">
-              <span>Accent</span>
-              <select
-                aria-label="Interface style"
-                value={style}
-                onChange={(e) => setStyle(e.target.value)}
-              >
-                <option value="clear">Electric</option>
-                <option value="sky">Ice</option>
-                <option value="sand">Candy</option>
-              </select>
-            </label>
             <button
               className="shell-search"
               onClick={onOpenSearch}
@@ -454,18 +435,6 @@ export function AppLayout({
                 <X size={20} />
               </button>
             </div>
-            <label className="mobile-accent-selector">
-              Color mood
-              <select
-                aria-label="Mobile accent color"
-                value={style}
-                onChange={(e) => setStyle(e.target.value)}
-              >
-                <option value="clear">Green rainbow</option>
-                <option value="sky">Ice</option>
-                <option value="sand">Candy</option>
-              </select>
-            </label>
             {navigation.map(renderNav)}
             <button className="shell-nav" onClick={() => navigate("settings")}>
               <Settings size={17} />
