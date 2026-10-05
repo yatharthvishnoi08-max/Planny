@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowRight, CalendarDays, Check, ChevronRight, Circle, F
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
 import { isPending, localDate } from "../../lib/dates";
-import { projectPriority, withProjectPriority } from "../../lib/projectPriority";
+import { moveProjectPriority, normalizeProjectPriorities, projectPriority } from "../../lib/projectPriority";
 import { projectPlanning, type ProjectMilestone, withProjectPlanning } from "../../lib/projectPlanning";
 
 interface ProjectsViewProps {
@@ -60,6 +60,14 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, initialPro
     return () => window.removeEventListener("keydown", close);
   }, []);
 
+  useEffect(() => {
+    const normalized = normalizeProjectPriorities(projects);
+    normalized.forEach((project) => {
+      const original = projects.find((item) => item.id === project.id);
+      if (original && original.icon !== project.icon) syncEngine.saveProject(project);
+    });
+  }, [projects]);
+
   const rankedProjects = useMemo(() => projects.map((project, index) => ({ project, priority: projectPriority(project, index + 1), originalIndex: index })).sort((a, b) => a.priority - b.priority || a.originalIndex - b.originalIndex), [projects]);
   const currentProject = projects.find((project) => project.id === selectedProjectId) || rankedProjects[0]?.project;
   const projectTasks = tasks.filter((task) => task.project_id === currentProject?.id);
@@ -96,7 +104,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, initialPro
     const starter = STARTERS.find((item) => item.id === starterId) || STARTERS[0];
     let created: Project = { id: crypto.randomUUID(), user_id: syncEngine.getUserId(), title: newTitle.trim(), description: newDesc.trim() || starter.description, color: "#9ef263", icon: `folder|priority:${newPriority}`, status: "active", created_at: now, updated_at: now };
     created = withProjectPlanning(created, { targetDate: newTarget, weeklyMinutes: newWeeklyMinutes, milestones: starter.milestones.map((title) => ({ id: crypto.randomUUID(), title, done: false })) });
-    syncEngine.saveProject(created);
+    moveProjectPriority([...projects, created], created.id, newPriority).forEach(
+      (project) => syncEngine.saveProject(project),
+    );
     starter.tasks.forEach((item, index) => syncEngine.saveTask({ id: crypto.randomUUID(), user_id: syncEngine.getUserId(), project_id: created.id, title: item.title, description: null, priority: index === 0 ? "high" : "medium", status: "todo", start_date: localDate(), deadline: null, estimated_duration_minutes: item.minutes, recurrence_rule: null, is_routine: false, is_brain_dump: false, position: index, completed_at: null, created_at: now, updated_at: now }));
     setSelectedProjectId(created.id); setNewTitle(""); setNewDesc(""); setNewTarget(""); setNewWeeklyMinutes(180); setShowNewProjectModal(false);
   };
@@ -136,7 +146,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, initialPro
       {currentProject && <main className="project-workspace">
         <section className="project-title-row">
           <div><div className="project-title-line"><h2>{currentProject.title}</h2><span className={`project-health ${health.tone}`}><i /> {health.label}</span></div><p>{currentProject.description || "Give this project a clear outcome."}</p></div>
-          <div className="project-title-actions"><label>Priority <input type="number" min="1" max="99" value={projectPriority(currentProject, 1)} onChange={(event) => syncEngine.saveProject(withProjectPriority(currentProject, Number(event.target.value)))} /></label><button onClick={() => onAddTask(currentProject.id)}><Plus size={15} /> Add task</button><button className="icon-only" aria-label="Delete project" onClick={() => setProjectToDelete(currentProject)}><Trash2 size={15} /></button></div>
+          <div className="project-title-actions"><label>Rank <input type="number" min="1" max={Math.max(1, projects.length)} value={projectPriority(currentProject, 1)} onChange={(event) => moveProjectPriority(projects, currentProject.id, Number(event.target.value)).forEach((project) => syncEngine.saveProject(project))} /></label><button onClick={() => onAddTask(currentProject.id)}><Plus size={15} /> Add task</button><button className="icon-only" aria-label="Delete project" onClick={() => setProjectToDelete(currentProject)}><Trash2 size={15} /></button></div>
         </section>
 
         <section className="project-pulse-grid">
@@ -154,7 +164,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, initialPro
           </article>
           <article className="project-panel roadmap-panel">
             <header><div><span className="page-eyebrow">LIVE ROADMAP</span><h3>What happens next</h3></div><span>{pendingTasks.length} open</span></header>
-            <div className="project-roadmap">{pendingTasks.length ? pendingTasks.slice().sort((a, b) => (a.deadline ? new Date(a.deadline).getTime() : Infinity) - (b.deadline ? new Date(b.deadline).getTime() : Infinity)).slice(0, 6).map((task, index) => <button key={task.id} onClick={() => onSelectTask(task)}><i className={task.priority} /><span><small>{index === 0 ? "NEXT" : task.deadline ? new Date(task.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "UNSCHEDULED"}</small><strong>{task.title}</strong></span><em>{formatMinutes(task.estimated_duration_minutes)}</em><ChevronRight size={14} /></button>) : <div className="roadmap-clear"><Sparkles size={20} /><strong>Clear runway.</strong><small>Add a task when you know the next move.</small></div>}</div>
+            <div className="project-roadmap">{pendingTasks.length ? pendingTasks.slice().sort((a, b) => (a.deadline ? new Date(a.deadline).getTime() : Infinity) - (b.deadline ? new Date(b.deadline).getTime() : Infinity)).map((task, index) => <button key={task.id} onClick={() => onSelectTask(task)}><i className={task.priority} /><span><small>{index === 0 ? "NEXT" : task.deadline ? new Date(task.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "UNSCHEDULED"}</small><strong>{task.title}</strong></span><em>{formatMinutes(task.estimated_duration_minutes)}</em><ChevronRight size={14} /></button>) : <div className="roadmap-clear"><Sparkles size={20} /><strong>Clear runway.</strong><small>Add a task when you know the next move.</small></div>}</div>
             {nextDeadline(projectTasks) && <footer>Next deadline: <b>{nextDeadline(projectTasks)?.title}</b></footer>}
           </article>
         </section>
@@ -163,7 +173,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, initialPro
       {showNewProjectModal && <div className="project-modal-backdrop" onClick={(event) => event.target === event.currentTarget && setShowNewProjectModal(false)}><section className="project-create-modal" role="dialog" aria-modal="true" aria-labelledby="new-project-title"><button className="project-modal-close" onClick={() => setShowNewProjectModal(false)}><X size={18} /></button><span className="page-eyebrow"><Sparkles size={13} /> SMART PROJECT STARTER</span><h2 id="new-project-title">What are we making happen?</h2><p>Choose a shape. Planny will create the first roadmap so you never face an empty project.</p><form onSubmit={handleCreateProject}>
         <div className="project-starters">{STARTERS.map((starter) => <button type="button" key={starter.id} className={starterId === starter.id ? "active" : ""} onClick={() => setStarterId(starter.id)}><strong>{starter.label}</strong><small>{starter.description}</small></button>)}</div>
         <label><span>Project name</span><input autoFocus required value={newTitle} onChange={(event) => setNewTitle(event.target.value)} placeholder="e.g. Launch Planny 2.0" /></label><label><span>What does success look like?</span><textarea rows={2} value={newDesc} onChange={(event) => setNewDesc(event.target.value)} placeholder="A simple, concrete finish line…" /></label>
-        <div className="project-form-row"><label><span>Target date</span><input type="date" value={newTarget} onChange={(event) => setNewTarget(event.target.value)} /></label><label><span>Minutes per week</span><input type="number" min="30" step="30" value={newWeeklyMinutes} onChange={(event) => setNewWeeklyMinutes(Number(event.target.value))} /></label><label><span>Priority</span><input type="number" min="1" max="99" value={newPriority} onChange={(event) => setNewPriority(Math.max(1, Math.min(99, Number(event.target.value) || 1)))} /></label></div>
+        <div className="project-form-row"><label><span>Target date</span><input type="date" value={newTarget} onChange={(event) => setNewTarget(event.target.value)} /></label><label><span>Minutes per week</span><input type="number" min="30" step="30" value={newWeeklyMinutes} onChange={(event) => setNewWeeklyMinutes(Number(event.target.value))} /></label><label><span>Rank</span><input type="number" min="1" max={projects.length + 1} value={newPriority} onChange={(event) => setNewPriority(Math.max(1, Math.min(projects.length + 1, Number(event.target.value) || 1)))} /></label></div>
         <div className="project-create-preview"><Wand2 size={17} /><span><strong>Planny will make:</strong><small>3 milestones · 3 starter tasks · a weekly workload check</small></span></div><button className="project-create-submit" type="submit">Create my project <ArrowRight size={16} /></button>
       </form></section></div>}
 

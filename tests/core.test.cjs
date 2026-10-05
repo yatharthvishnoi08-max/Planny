@@ -241,7 +241,12 @@ test("routine recurrence handles weekdays, expiry, monthly end and interval days
   );
 });
 test("project priorities use numeric ranks with one as the highest", () => {
-  const { projectPriority, withProjectPriority } =
+  const {
+    projectPriority,
+    withProjectPriority,
+    normalizeProjectPriorities,
+    moveProjectPriority,
+  } =
     environment().load("projectPriority");
   const project = {
     id: randomUUID(),
@@ -252,6 +257,23 @@ test("project priorities use numeric ranks with one as the highest", () => {
   const ranked = withProjectPriority(project, 1);
   assert.equal(projectPriority(ranked), 1);
   assert.equal(withProjectPriority(project, 200).icon, "folder|priority:99");
+  const projects = [
+    { id: "a", icon: "folder|priority:1" },
+    { id: "b", icon: "folder|priority:1" },
+    { id: "c", icon: "folder|priority:1" },
+  ];
+  assert.deepEqual(
+    Array.from(normalizeProjectPriorities(projects), (item) =>
+      projectPriority(item),
+    ),
+    [1, 2, 3],
+  );
+  const moved = moveProjectPriority(projects, "c", 1);
+  assert.deepEqual(Array.from(moved, (item) => item.id), ["c", "a", "b"]);
+  assert.deepEqual(
+    Array.from(moved, (item) => projectPriority(item)),
+    [1, 2, 3],
+  );
 });
 test("project planning metadata round-trips without changing numeric priority", () => {
   const { projectPriority } = environment().load("projectPriority");
