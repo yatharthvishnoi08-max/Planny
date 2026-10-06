@@ -316,6 +316,18 @@ export const AIAssistantView: React.FC<{
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
+    } else if (action.type === "create_note") {
+      syncEngine.saveNote({
+        id: crypto.randomUUID(),
+        user_id: syncEngine.getUserId(),
+        project_id: null,
+        title: action.payload.title,
+        content: action.payload.content,
+        note_type: action.payload.note_type || "note",
+        is_pinned: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
     } else if (action.type === "reschedule_tasks") {
       const tasks = syncEngine
         .getTasks()

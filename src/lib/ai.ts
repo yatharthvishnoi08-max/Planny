@@ -697,6 +697,7 @@ export async function processAssistantMessage(
               "create_task",
               "reschedule_tasks",
               "create_routine",
+              "create_note",
               "suggest_priority",
             ],
           },
@@ -707,6 +708,9 @@ export async function processAssistantMessage(
           taskId: { type: "string" },
           routineTitle: { type: "string" },
           time_of_day: { type: "string" },
+          noteTitle: { type: "string" },
+          noteContent: { type: "string" },
+          noteType: { type: "string", enum: ["note", "study", "idea", "fact"] },
         },
         required: ["type", "title"],
       },
@@ -755,6 +759,16 @@ ${image ? "AN IMAGE IS ATTACHED. Read visible text and understand the image itse
       title: a.routineTitle,
       time_of_day: a.time_of_day,
       frequency: "daily",
+    };
+  } else if (a.type === "create_note") {
+    if (!a.noteTitle?.trim() || !a.noteContent?.trim())
+      throw new Error("Invalid note proposal.");
+    payload = {
+      title: a.noteTitle.trim().slice(0, 160),
+      content: a.noteContent.trim().slice(0, 20_000),
+      note_type: ["note", "study", "idea", "fact"].includes(a.noteType)
+        ? a.noteType
+        : "note",
     };
   } else if (
     a.type === "suggest_priority" &&
