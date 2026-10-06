@@ -832,6 +832,57 @@ select:focus-visible {
   font-weight: 650;
   color: inherit;
 }
+.assistant-task-proposal-list {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.assistant-task-proposal-list > div {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 9px;
+  background: hsl(var(--surface-100));
+}
+.assistant-task-proposal-list > div > span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  color: hsl(var(--foreground));
+  background: hsl(var(--surface-200));
+  font-size: 9px;
+  font-weight: 700;
+}
+.assistant-task-proposal-list strong,
+.assistant-task-proposal-list small { display: block; }
+.assistant-task-proposal-list strong { color: hsl(var(--foreground)); font-size: 11px; }
+.assistant-task-proposal-list small { margin-top: 2px; color: hsl(var(--muted-foreground)); font-size: 9px; text-transform: capitalize; }
+.assistant-image-attachment {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 30px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 7px;
+  padding: 7px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--surface-100));
+  box-shadow: 0 8px 24px #0000000a;
+}
+.assistant-image-attachment img { width: 48px; height: 48px; object-fit: cover; border-radius: 9px; }
+.assistant-image-attachment strong,
+.assistant-image-attachment span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.assistant-image-attachment strong { color: hsl(var(--foreground)); font-size: 10px; }
+.assistant-image-attachment span { margin-top: 2px; color: hsl(var(--muted-foreground)); font-size: 8px; }
+.assistant-image-attachment button,
+.assistant-image-button { color: hsl(var(--muted-foreground)); }
+.assistant-image-attachment button:hover,
+.assistant-image-button:hover { color: hsl(var(--foreground)); background: hsl(var(--surface-200)); }
 @media (max-width: 800px) {
   .landing-hero {
     grid-template-columns: 1fr;

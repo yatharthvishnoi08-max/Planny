@@ -20,6 +20,7 @@ import {
   ListTodo,
   Repeat2,
   Timer,
+  ImagePlus,
 } from "lucide-react";
 import { AIMessage, AIStructuredAction, Priority } from "../../types/database";
 import { processAssistantMessage, isHostedAIAvailable } from "../../lib/ai";
@@ -31,6 +32,7 @@ import {
   loadAssistantMemory,
   saveAssistantMemory,
 } from "../../lib/assistantMemory";
+import { prepareAIImage, validateAIImage } from "../../lib/aiImage";
 
 const QUICK_SUGGESTIONS = [
   "What should I do now?",
@@ -77,11 +79,15 @@ export const AIAssistantView: React.FC<{
 }> = ({ onStartFocus }) => {
   const { user, profile } = useAuth();
   const messagesEnd = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const memoryRef = useRef<AssistantMemory | null>(null);
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [thinkingStep, setThinkingStep] = useState(0);
   const firstName =
     profile?.full_name?.trim().split(/\s+/)[0] ||
@@ -116,7 +122,9 @@ export const AIAssistantView: React.FC<{
     typeof profile?.onboarding_data?.planningStyle === "string"
       ? profile.onboarding_data.planningStyle
       : null;
-  const thinkingLabels = ["Reading the conversation", "Checking your tasks and schedule", "Preparing a useful answer"];
+  const thinkingLabels = isAnalyzingImage
+    ? ["Reading the image", "Finding tasks and useful details", "Preparing a reviewable plan"]
+    : ["Reading the conversation", "Checking your tasks and schedule", "Preparing a useful answer"];
   useEffect(() => {
     if (!isProcessing) { setThinkingStep(0); return; }
     const timer = window.setInterval(() => setThinkingStep((value) => Math.min(value + 1, thinkingLabels.length - 1)), 1400);
@@ -150,23 +158,50 @@ export const AIAssistantView: React.FC<{
     messagesEnd.current?.scrollIntoView({ block: "nearest" });
   }, [messages, isProcessing]);
 
+  useEffect(() => {
+    if (!selectedImage) {
+      setImagePreviewUrl(null);
+      return;
+    }
+    const previewUrl = URL.createObjectURL(selectedImage);
+    setImagePreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [selectedImage]);
+
   const handleSend = async (textToSend?: string) => {
+    const attachedImage = selectedImage;
     const text = (textToSend || inputText).trim();
-    if (!text || isProcessing) return;
+    if ((!text && !attachedImage) || isProcessing) return;
+
+    const prompt = text || "Find every actionable task in this image and organize them for me. Only use details that are clearly visible.";
 
     setError(null);
     setInputText("");
+    setIsProcessing(true);
+    setIsAnalyzingImage(Boolean(attachedImage));
+
+    let image;
+    try {
+      image = attachedImage ? await prepareAIImage(attachedImage) : undefined;
+    } catch (imageError) {
+      setError(imageError instanceof Error ? imageError.message : "Could not read this image.");
+      setIsProcessing(false);
+      setIsAnalyzingImage(false);
+      return;
+    }
+
     const userMsg: AIMessage = {
       id: crypto.randomUUID(),
       conversation_id: memoryRef.current?.conversationId || crypto.randomUUID(),
       user_id: syncEngine.getUserId(),
       role: "user",
-      content: text,
+      content: `${attachedImage ? `📷 ${attachedImage.name}\n` : ""}${prompt}`,
       created_at: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    setIsProcessing(true);
+    setSelectedImage(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
 
     try {
       const userId = user?.id || syncEngine.getUserId();
@@ -181,10 +216,10 @@ export const AIAssistantView: React.FC<{
         messages: [...base.messages, userMsg],
       });
       memoryRef.current = withUser;
-      const response = await processAssistantMessage(text, {
+      const response = await processAssistantMessage(prompt, {
         name: profile?.full_name,
         ...contextForAI(withUser),
-      });
+      }, image);
       const assistantMsg: AIMessage = {
         id: crypto.randomUUID(),
         conversation_id: withUser.conversationId,
@@ -207,7 +242,25 @@ export const AIAssistantView: React.FC<{
       );
     } finally {
       setIsProcessing(false);
+      setIsAnalyzingImage(false);
     }
+  };
+
+  const handleImageSelection = (file: File | null) => {
+    setError(null);
+    if (!file) return;
+    const validation = validateAIImage(file);
+    if (validation) {
+      setError(validation);
+      if (imageInputRef.current) imageInputRef.current.value = "";
+      return;
+    }
+    setSelectedImage(file);
+  };
+
+  const clearSelectedImage = () => {
+    setSelectedImage(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
   const handleExecuteAction = (action: AIStructuredAction, msgId: string) => {
@@ -431,6 +484,22 @@ export const AIAssistantView: React.FC<{
                     <p className="font-medium text-foreground mb-3">
                       {act.title}
                     </p>
+                    {act.type === "create_task" && Array.isArray(act.payload.tasks) && (
+                      <div className="assistant-task-proposal-list">
+                        {act.payload.tasks.map((task: any, index: number) => (
+                          <div key={`${task.title}-${index}`}>
+                            <span>{index + 1}</span>
+                            <div>
+                              <strong>{task.title}</strong>
+                              <small>
+                                {task.estimated_duration_minutes || 30} min · {task.priority || "medium"}
+                                {task.deadline ? ` · due ${new Date(task.deadline).toLocaleDateString()}` : ""}
+                              </small>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {act.type === "reschedule_tasks" && (
                       <p className="mb-3 text-muted-foreground">
                         {act.payload.taskIds?.length || 0} tasks →{" "}
@@ -453,7 +522,7 @@ export const AIAssistantView: React.FC<{
                           className="flex items-center space-x-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors"
                         >
                           <Check className="w-3.5 h-3.5" />
-                          <span>Confirm Action</span>
+                          <span>{act.type === "create_task" && act.payload.tasks?.length > 1 ? `Add ${act.payload.tasks.length} tasks` : "Confirm Action"}</span>
                         </button>
                       </div>
                     )}
@@ -496,6 +565,18 @@ export const AIAssistantView: React.FC<{
 
       {/* Input box */}
       <div className="pt-2 shrink-0">
+        {selectedImage && imagePreviewUrl && (
+          <div className="assistant-image-attachment">
+            <img src={imagePreviewUrl} alt="Image ready for analysis" />
+            <div>
+              <strong>{selectedImage.name}</strong>
+              <span>Ready to analyze · maximum 15 MB</span>
+            </div>
+            <button type="button" onClick={clearSelectedImage} aria-label="Remove image">
+              <X size={15} />
+            </button>
+          </div>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -507,12 +588,29 @@ export const AIAssistantView: React.FC<{
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask AI: 'What should I do now?', 'Plan tomorrow', 'Break this project into tasks'..."
-            className="w-full bg-surface-100 border border-surface-border rounded-xl pl-4 pr-12 py-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 transition-colors shadow-sm"
+            placeholder={selectedImage ? "Ask about this image, or send it to extract tasks…" : "Ask AI, or attach an image to find tasks…"}
+            className="w-full bg-surface-100 border border-surface-border rounded-xl pl-12 pr-12 py-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 transition-colors shadow-sm"
+          />
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+            className="sr-only"
+            onChange={(event) => handleImageSelection(event.target.files?.[0] || null)}
           />
           <button
+            type="button"
+            onClick={() => imageInputRef.current?.click()}
+            disabled={isProcessing}
+            className="assistant-image-button absolute left-2 p-2 rounded-lg transition-colors"
+            aria-label="Attach an image"
+            title="Analyze an image"
+          >
+            <ImagePlus className="w-4 h-4" />
+          </button>
+          <button
             type="submit"
-            disabled={!inputText.trim() || isProcessing}
+            disabled={(!inputText.trim() && !selectedImage) || isProcessing}
             className="absolute right-2 p-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-lg transition-colors"
           >
             <Send className="w-4 h-4" />

@@ -11,7 +11,12 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-async function callGemini(prompt: string, schema: object) {
+type ImageInput = {
+  data: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+};
+
+async function callGemini(prompt: string, schema: object, image?: ImageInput) {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY is not configured.");
   const model = Deno.env.get("AI_MODEL") || "gemini-3.5-flash-lite";
@@ -21,7 +26,15 @@ async function callGemini(prompt: string, schema: object) {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        contents: [{
+          role: "user",
+          parts: [
+            { text: prompt },
+            ...(image
+              ? [{ inlineData: { mimeType: image.mimeType, data: image.data } }]
+              : []),
+          ],
+        }],
         generationConfig: {
           responseMimeType: "application/json",
           responseJsonSchema: schema,
@@ -39,7 +52,7 @@ async function callGemini(prompt: string, schema: object) {
   return JSON.parse(text);
 }
 
-async function callOllama(prompt: string, schema: object) {
+async function callOllama(prompt: string, schema: object, image?: ImageInput) {
   const baseUrl = (Deno.env.get("OLLAMA_BASE_URL") || "").replace(/\/$/, "");
   if (!baseUrl)
     throw new Error("OLLAMA_BASE_URL must point to a server reachable from Supabase.");
@@ -50,10 +63,13 @@ async function callOllama(prompt: string, schema: object) {
     method: "POST",
     headers,
     body: JSON.stringify({
-      model: Deno.env.get("AI_MODEL") || "gemma4:31b",
+      model: image
+        ? Deno.env.get("AI_VISION_MODEL") || "qwen3-vl:235b-cloud"
+        : Deno.env.get("AI_MODEL") || "gemma4:31b",
       messages: [{
         role: "user",
         content: `${prompt}\n\nReturn only valid JSON matching this schema, without markdown:\n${JSON.stringify(schema)}`,
+        ...(image ? { images: [image.data] } : {}),
       }],
       format: schema,
       stream: false,
@@ -92,6 +108,21 @@ export default {
       const body = await request.json();
       const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
       const schema = body?.schema;
+      const rawImage = body?.image;
+      let image: ImageInput | undefined;
+      if (rawImage !== undefined) {
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+        if (
+          !rawImage ||
+          typeof rawImage !== "object" ||
+          !allowedTypes.includes(rawImage.mimeType) ||
+          typeof rawImage.data !== "string" ||
+          rawImage.data.length < 16 ||
+          rawImage.data.length > 8_400_000 ||
+          !/^[A-Za-z0-9+/]+={0,2}$/.test(rawImage.data)
+        ) return json({ error: "Invalid image. Use a JPG, PNG, or WebP up to 6 MB." }, 400);
+        image = { mimeType: rawImage.mimeType, data: rawImage.data };
+      }
       if (
         !prompt ||
         prompt.length > 30_000 ||
@@ -110,8 +141,8 @@ export default {
 
       const provider = (Deno.env.get("AI_PROVIDER") || "gemini").toLowerCase();
       const result = provider === "ollama"
-        ? await callOllama(prompt, schema)
-        : await callGemini(prompt, schema);
+        ? await callOllama(prompt, schema, image)
+        : await callGemini(prompt, schema, image);
       return json({ result });
     } catch (error) {
       console.error(error);
