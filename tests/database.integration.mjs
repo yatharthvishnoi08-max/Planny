@@ -34,6 +34,9 @@ await db.exec(
   fs.readFileSync(root + "20261005020000_reduce_pdf_upload_limit.sql", "utf8"),
 );
 await db.exec(
+  fs.readFileSync(root + "20261006010000_media_storage.sql", "utf8"),
+);
+await db.exec(
   `GRANT USAGE ON SCHEMA public,auth,storage TO authenticated; GRANT ALL ON ALL TABLES IN SCHEMA public,storage TO authenticated; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth,storage TO authenticated; INSERT INTO auth.users VALUES ('11111111-1111-4111-8111-111111111111','a@test.invalid','{}'),('22222222-2222-4222-8222-222222222222','b@test.invalid','{}'); SET ROLE authenticated; SET request.jwt.claim.sub='11111111-1111-4111-8111-111111111111';`,
 );
 const owner = "11111111-1111-4111-8111-111111111111",
@@ -86,6 +89,31 @@ await assert.rejects(
   db.query(
     "INSERT INTO storage.objects(bucket_id,name) VALUES ('user-pdfs',$1)",
     ["22222222-2222-4222-8222-222222222222/private.pdf"],
+  ),
+);
+assert.equal(
+  (await db.query("SELECT file_size_limit FROM storage.buckets WHERE id='user-attachments'"))
+    .rows[0].file_size_limit,
+  26214400,
+);
+await db.query(
+  "INSERT INTO storage.objects(bucket_id,name) VALUES ('user-attachments',$1)",
+  [`${owner}/image/photo.webp`],
+);
+await db.query(
+  "INSERT INTO storage.objects(bucket_id,name) VALUES ('user-attachments',$1)",
+  [`${owner}/audio/voice-note.mp3`],
+);
+await assert.rejects(
+  db.query(
+    "INSERT INTO storage.objects(bucket_id,name) VALUES ('user-attachments',$1)",
+    [`${owner}/image/unsafe.exe`],
+  ),
+);
+await assert.rejects(
+  db.query(
+    "INSERT INTO storage.objects(bucket_id,name) VALUES ('user-attachments',$1)",
+    ["22222222-2222-4222-8222-222222222222/audio/private.mp3"],
   ),
 );
 await assert.rejects(

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Note, Resource, NoteType, ResourceType } from "../../types/database";
+import { Note, Resource, NoteType } from "../../types/database";
 import {
   Plus,
   Edit2,
@@ -14,16 +14,21 @@ import {
   Upload,
   File as FileIcon,
   Loader2,
+  Image as ImageIcon,
+  AudioLines,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
+import { formatFileSize } from "../../lib/pdfStorage";
 import {
-  deletePdf,
-  formatFileSize,
-  isStoredPdf,
-  signedPdfUrl,
-  uploadPdf,
-  validatePdf,
-} from "../../lib/pdfStorage";
+  AttachmentKind,
+  attachmentKind,
+  attachmentLabel,
+  deleteAttachment,
+  isStoredAttachment,
+  signedAttachmentUrl,
+  uploadAttachment,
+  validateAttachment,
+} from "../../lib/attachmentStorage";
 
 interface KnowledgeViewProps {
   notes: Note[];
@@ -37,11 +42,11 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
   resources,
 }) => {
   const [filter, setFilter] = useState<
-    "all" | "notes" | "study" | "ideas" | "videos" | "resources"
+    "all" | "notes" | "study" | "ideas" | "videos" | "images" | "audio" | "resources"
   >("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [modalType, setModalType] = useState<"note" | "video" | "pdf">("note");
+  const [modalType, setModalType] = useState<"note" | "video" | AttachmentKind>("note");
 
   // Form states
   const [editingNote, setEditingNote] = useState<Note | null>(null);
@@ -51,8 +56,9 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
   const [url, setUrl] = useState("");
   const [noteType, setNoteType] = useState<NoteType>("note");
   const [durationMins, setDurationMins] = useState(25);
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!initialItemId) return;
@@ -80,7 +86,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
     if (filter === "ideas" && n.note_type !== "idea") return false;
     if (filter === "notes" && n.note_type !== "note" && n.note_type !== "fact")
       return false;
-    if (filter === "videos" || filter === "resources") return false;
+    if (["videos", "images", "audio", "resources"].includes(filter)) return false;
     if (
       q &&
       !n.title.toLowerCase().includes(q) &&
@@ -91,8 +97,14 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
   });
 
   const filteredResources = resources.filter((r) => {
+    const kind = attachmentKind(r.url);
     if (filter === "videos" && r.resource_type !== "youtube") return false;
-    if (filter === "resources" && r.resource_type === "youtube") return false;
+    if (filter === "images" && kind !== "image") return false;
+    if (filter === "audio" && kind !== "audio") return false;
+    if (
+      filter === "resources" &&
+      (r.resource_type === "youtube" || kind === "image" || kind === "audio")
+    ) return false;
     if (filter === "notes" || filter === "study" || filter === "ideas")
       return false;
     if (
@@ -151,18 +163,19 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
         updated_at: new Date().toISOString(),
       });
     } else {
-      if (!pdfFile) {
-        setError("Choose a PDF to upload.");
+      const kind = modalType as AttachmentKind;
+      if (!attachmentFile) {
+        setError(`Choose ${kind === "audio" ? "an" : "a"} ${attachmentLabel(kind).toLowerCase()} to upload.`);
         return;
       }
-      const validation = validatePdf(pdfFile);
+      const validation = validateAttachment(attachmentFile, kind);
       if (validation) {
         setError(validation);
         return;
       }
       setUploading(true);
       try {
-        const storedUrl = await uploadPdf(pdfFile);
+        const storedUrl = await uploadAttachment(attachmentFile, kind);
         syncEngine.saveResource({
           id: crypto.randomUUID(),
           user_id: syncEngine.getUserId(),
@@ -181,7 +194,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
         setError(
           uploadError instanceof Error
             ? uploadError.message
-            : "Could not upload this PDF.",
+            : `Could not upload this ${kind}.`,
         );
         setUploading(false);
         return;
@@ -191,29 +204,29 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
     setTitle("");
     setContent("");
     setUrl("");
-    setPdfFile(null);
+    setAttachmentFile(null);
     setUploading(false);
     setShowAddModal(false);
   };
 
-  const openPdf = async (resource: Resource) => {
+  const openAttachment = async (resource: Resource) => {
     if (!resource.url) return;
     const preview = window.open("about:blank", "_blank");
     try {
-      const signedUrl = await signedPdfUrl(resource.url);
+      const signedUrl = await signedAttachmentUrl(resource.url);
       if (preview) preview.location.replace(signedUrl);
       else window.open(signedUrl, "_blank", "noopener,noreferrer");
     } catch (openError) {
       preview?.close();
       setError(
-        openError instanceof Error ? openError.message : "Could not open PDF.",
+        openError instanceof Error ? openError.message : "Could not open this file.",
       );
     }
   };
 
   const removeResource = async (resource: Resource) => {
     try {
-      if (resource.url && isStoredPdf(resource.url)) await deletePdf(resource.url);
+      if (resource.url && isStoredAttachment(resource.url)) await deleteAttachment(resource.url);
       syncEngine.deleteResource(resource.id);
     } catch (deleteError) {
       setError(
@@ -224,12 +237,47 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
     }
   };
 
+  useEffect(() => {
+    let active = true;
+    const media = resources.filter((resource) => {
+      const kind = attachmentKind(resource.url);
+      return resource.url && (kind === "image" || kind === "audio");
+    });
+    void Promise.all(
+      media.map(async (resource) => {
+        if (!resource.url) return null;
+        try {
+          return [resource.id, await signedAttachmentUrl(resource.url)] as const;
+        } catch {
+          return null;
+        }
+      }),
+    ).then((entries) => {
+      if (!active) return;
+      setMediaUrls(Object.fromEntries(entries.filter((entry) => entry !== null)));
+    });
+    return () => {
+      active = false;
+    };
+  }, [resources]);
+
   const extractYouTubeId = (videoUrl: string | null): string | null => {
     if (!videoUrl) return null;
     const match = videoUrl.match(
       /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/,
     );
     return match ? match[1] : null;
+  };
+
+  const beginCreate = (type: "note" | "video" | AttachmentKind) => {
+    setEditingNote(null);
+    setTitle("");
+    setContent("");
+    setUrl("");
+    setAttachmentFile(null);
+    setError("");
+    setModalType(type);
+    setShowAddModal(true);
   };
 
   useEffect(() => {
@@ -239,6 +287,11 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, []);
+
+  const attachmentModalKind: AttachmentKind | null =
+    modalType === "pdf" || modalType === "image" || modalType === "audio"
+      ? modalType
+      : null;
 
   return (
     <div className="content-page max-w-5xl mx-auto px-4 sm:px-8 py-6 sm:py-10 animate-fade-in">
@@ -257,16 +310,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
         <div className="knowledge-actions flex items-center space-x-2">
           <button
             type="button"
-            onClick={() => {
-              setEditingNote(null);
-              setTitle("");
-              setContent("");
-              setUrl("");
-              setPdfFile(null);
-              setError("");
-              setModalType("pdf");
-              setShowAddModal(true);
-            }}
+            onClick={() => beginCreate("pdf")}
             className="knowledge-pdf-button"
           >
             <Upload className="w-3.5 h-3.5" />
@@ -274,15 +318,23 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setEditingNote(null);
-              setTitle("");
-              setContent("");
-              setUrl("");
-              setError("");
-              setModalType("video");
-              setShowAddModal(true);
-            }}
+            onClick={() => beginCreate("image")}
+            className="knowledge-pdf-button"
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>Add photo</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => beginCreate("audio")}
+            className="knowledge-pdf-button"
+          >
+            <AudioLines className="w-3.5 h-3.5" />
+            <span>Add audio</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => beginCreate("video")}
             className="flex items-center space-x-1.5 px-3 py-1.5 bg-surface-200 hover:bg-surface-hover border border-surface-border text-foreground rounded-lg text-xs font-medium transition-colors"
           >
             <Video className="w-3.5 h-3.5 text-red-400" />
@@ -291,14 +343,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
 
           <button
             type="button"
-            onClick={() => {
-              setEditingNote(null);
-              setTitle("");
-              setContent("");
-              setError("");
-              setModalType("note");
-              setShowAddModal(true);
-            }}
+            onClick={() => beginCreate("note")}
             className="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -311,7 +356,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0">
           {(
-            ["all", "notes", "study", "ideas", "videos", "resources"] as const
+            ["all", "notes", "study", "ideas", "videos", "images", "audio", "resources"] as const
           ).map((f) => (
             <button
               key={f}
@@ -393,6 +438,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
         {/* Resources & Video Tasks */}
         {filteredResources.map((res) => {
           const ytId = extractYouTubeId(res.url);
+          const storedKind = attachmentKind(res.url);
 
           return (
             <div
@@ -402,7 +448,11 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    {res.resource_type === "youtube" ? (
+                    {storedKind === "image" ? (
+                      <ImageIcon className="w-4 h-4 text-emerald-400" />
+                    ) : storedKind === "audio" ? (
+                      <AudioLines className="w-4 h-4 text-emerald-400" />
+                    ) : res.resource_type === "youtube" ? (
                       <Video className="w-4 h-4 text-red-400" />
                     ) : res.resource_type === "document" ? (
                       <FileIcon className="w-4 h-4 text-emerald-400" />
@@ -414,7 +464,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                     </h3>
                   </div>
                   <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-surface-200 text-muted-foreground border border-surface-border">
-                    {res.resource_type}
+                    {storedKind ? attachmentLabel(storedKind) : res.resource_type}
                   </span>
                 </div>
 
@@ -431,6 +481,28 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                   </div>
                 )}
 
+                {storedKind === "image" && mediaUrls[res.id] && (
+                  <button
+                    type="button"
+                    className="knowledge-image-preview"
+                    onClick={() => void openAttachment(res)}
+                    aria-label={`Open ${res.title}`}
+                  >
+                    <img src={mediaUrls[res.id]} alt={res.title} loading="lazy" />
+                  </button>
+                )}
+
+                {storedKind === "audio" && mediaUrls[res.id] && (
+                  <audio
+                    className="knowledge-audio-preview"
+                    controls
+                    preload="metadata"
+                    src={mediaUrls[res.id]}
+                  >
+                    Your browser does not support audio playback.
+                  </audio>
+                )}
+
                 {res.notes && (
                   <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                     {res.notes}
@@ -439,13 +511,13 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
               </div>
 
               <div className="pt-3 border-t border-surface-border flex items-center justify-between mt-2 text-xs">
-                {res.url && isStoredPdf(res.url) ? (
+                {res.url && isStoredAttachment(res.url) ? (
                   <button
                     type="button"
-                    onClick={() => void openPdf(res)}
+                    onClick={() => void openAttachment(res)}
                     className="text-emerald-400 hover:underline flex items-center space-x-1 text-[11px]"
                   >
-                    <span>Open PDF</span>
+                    <span>Open {storedKind ? attachmentLabel(storedKind) : "file"}</span>
                     <ExternalLink className="w-3 h-3" />
                   </button>
                 ) : res.url ? (
@@ -505,8 +577,8 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
             <h3 className="text-base font-medium text-foreground mb-3">
               {modalType === "video"
                 ? "Add Video Task / Resource"
-                : modalType === "pdf"
-                  ? "Add a PDF"
+                : attachmentModalKind
+                  ? `Add ${attachmentModalKind === "audio" ? "an" : "a"} ${attachmentLabel(attachmentModalKind)}`
                 : editingNote
                   ? "Edit note"
                   : "New note"}
@@ -527,7 +599,17 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={modalType === "video" ? "e.g. Watch Physics de Broglie Lecture" : modalType === "pdf" ? "e.g. Physics chapter 4 notes" : "Title"}
+                  placeholder={
+                    modalType === "video"
+                      ? "e.g. Watch Physics de Broglie Lecture"
+                      : modalType === "pdf"
+                        ? "e.g. Physics chapter 4 notes"
+                        : modalType === "image"
+                          ? "e.g. Whiteboard plan"
+                          : modalType === "audio"
+                            ? "e.g. Lecture voice note"
+                            : "Title"
+                  }
                   className="w-full bg-surface-200 border border-surface-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -565,35 +647,47 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                 </>
               )}
 
-              {modalType === "pdf" && (
+              {attachmentModalKind && (
                 <div className="pdf-upload-field">
-                  <label htmlFor="knowledge-pdf">PDF file · maximum 25 MB</label>
+                  <label htmlFor="knowledge-attachment">
+                    {attachmentLabel(attachmentModalKind)} file · maximum {attachmentModalKind === "image" ? "15 MB" : "25 MB"}
+                  </label>
                   <input
-                    id="knowledge-pdf"
+                    id="knowledge-attachment"
                     type="file"
-                    accept="application/pdf,.pdf"
+                    accept={
+                      attachmentModalKind === "pdf"
+                        ? "application/pdf,.pdf"
+                        : attachmentModalKind === "image"
+                          ? "image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif"
+                          : "audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,audio/ogg,audio/webm,audio/aac,.mp3,.m4a,.wav,.ogg,.webm,.aac"
+                    }
                     disabled={uploading}
                     onChange={(event) => {
                       const file = event.target.files?.[0] || null;
                       setError("");
-                      setPdfFile(file);
+                      setAttachmentFile(file);
                       if (!file) return;
-                      const validation = validatePdf(file);
+                      const validation = validateAttachment(file, attachmentModalKind);
                       if (validation) {
                         setError(validation);
-                        setPdfFile(null);
+                        setAttachmentFile(null);
                         event.currentTarget.value = "";
                         return;
                       }
-                      if (!title.trim()) setTitle(file.name.replace(/\.pdf$/i, ""));
+                      if (!title.trim()) setTitle(file.name.replace(/\.[^.]+$/, ""));
                     }}
                   />
-                  <label htmlFor="knowledge-pdf" className={pdfFile ? "has-file" : ""}>
-                    <span>{pdfFile ? <FileIcon size={20} /> : <Upload size={20} />}</span>
-                    <strong>{pdfFile ? pdfFile.name : "Choose a PDF"}</strong>
-                    <small>{pdfFile ? `${formatFileSize(pdfFile.size)} · ready to upload` : "PDF only · securely stored in your account"}</small>
+                  <label htmlFor="knowledge-attachment" className={attachmentFile ? "has-file" : ""}>
+                    <span>
+                      {attachmentFile ? (
+                        attachmentModalKind === "image" ? <ImageIcon size={20} /> : attachmentModalKind === "audio" ? <AudioLines size={20} /> : <FileIcon size={20} />
+                      ) : <Upload size={20} />}
+                    </span>
+                    <strong>{attachmentFile ? attachmentFile.name : `Choose ${attachmentModalKind === "audio" ? "audio" : attachmentLabel(attachmentModalKind).toLowerCase()}`}</strong>
+                    <small>{attachmentFile ? `${formatFileSize(attachmentFile.size)} · ready to upload` : `Private ${attachmentLabel(attachmentModalKind).toLowerCase()} · securely stored in your account`}</small>
                   </label>
-                  {uploading && <div className="pdf-uploading"><Loader2 size={14} className="animate-spin" /><span>Uploading {pdfFile ? formatFileSize(pdfFile.size) : "PDF"}…</span></div>}
+                  {uploading && <div className="pdf-uploading"><Loader2 size={14} className="animate-spin" /><span>Uploading {attachmentFile ? formatFileSize(attachmentFile.size) : attachmentLabel(attachmentModalKind)}…</span></div>}
                 </div>
               )}
 
@@ -639,10 +733,10 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={uploading || (modalType === "pdf" && !pdfFile)}
+                  disabled={uploading || Boolean(attachmentModalKind && !attachmentFile)}
                   className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium"
                 >
-                  {uploading ? "Uploading…" : modalType === "pdf" ? "Upload PDF" : "Save"}
+                  {uploading ? "Uploading…" : attachmentModalKind ? `Upload ${attachmentLabel(attachmentModalKind)}` : "Save"}
                 </button>
               </div>
             </form>

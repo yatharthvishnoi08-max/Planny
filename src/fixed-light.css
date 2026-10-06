@@ -202,6 +202,8 @@ body,
 .app-shell .optional-choice-grid>button[aria-pressed="true"] { color:#18181b; border-color:#18181b55; background:#eeeeef; }
 .app-shell .knowledge-pdf-button,
 .app-shell .pdf-uploading { color:#27272a; border-color:#a1a1aa; background:#f4f4f5; }
+.app-shell .knowledge-image-preview { border-color:#d4d4d8; background:#f4f4f5; }
+.app-shell .knowledge-audio-preview { color-scheme:light; }
 .app-shell [class*="text-indigo-"],
 .app-shell [class*="text-purple-"],
 .app-shell [class*="text-pink-"],
