@@ -353,7 +353,25 @@ export const AITaskModal: React.FC<Props> = ({
 
             <div className="composer-footer task-flow-footer">
               <button type="button" className="secondary-button" onClick={() => step ? setStep((value) => value - 1) : onClose()}>{step ? <><ArrowLeft size={15} /> Back</> : "Cancel"}</button>
-              {step < 3 ? <button className="primary-button" type="button" onClick={nextStep}>{step === 2 ? "Optional details" : "Continue"} <ArrowRight size={15} /></button> : <button className="primary-button" type="submit">Create task <Plus size={16} /></button>}
+              {step < 3 ? (
+                <button
+                  key={`continue-${step}`}
+                  className="primary-button"
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    nextStep();
+                  }}
+                >
+                  {step === 2 ? "Optional details" : "Continue"}
+                  <ArrowRight size={15} />
+                </button>
+              ) : (
+                <button key="create-task" className="primary-button" type="submit">
+                  Create task
+                  <Plus size={16} />
+                </button>
+              )}
             </div>
           </form>
         )}
