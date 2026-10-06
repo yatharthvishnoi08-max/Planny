@@ -10,6 +10,8 @@ import {
   Trash2,
   Tag,
   Calendar,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { classifyBrainDump } from "../../lib/ai";
@@ -21,6 +23,16 @@ interface BrainDumpViewProps {
 export const BrainDumpView: React.FC<BrainDumpViewProps> = ({ items }) => {
   const [newText, setNewText] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpandedItems((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -248,16 +260,32 @@ export const BrainDumpView: React.FC<BrainDumpViewProps> = ({ items }) => {
           inboxItems.map((item) => (
             <div
               key={item.id}
-              className="p-3.5 rounded-xl bg-surface-100 hover:bg-surface-200/70 border border-surface-border flex items-center justify-between transition-colors group"
+              className="brain-dump-item p-3.5 rounded-xl bg-surface-100 hover:bg-surface-200/70 border border-surface-border transition-colors group"
             >
-              <div className="flex items-center space-x-3 flex-1 min-w-0 pr-3">
+              <div className="brain-dump-copy">
                 <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                <span className="text-xs font-medium text-foreground truncate">
-                  {item.raw_text}
-                </span>
+                <div>
+                  <p className={expandedItems.has(item.id) || item.raw_text.length <= 120 ? "expanded" : ""}>
+                    {item.raw_text}
+                  </p>
+                  {item.raw_text.length > 120 && (
+                    <button
+                      type="button"
+                      className="brain-dump-expand"
+                      onClick={() => toggleExpanded(item.id)}
+                      aria-expanded={expandedItems.has(item.id)}
+                    >
+                      {expandedItems.has(item.id) ? (
+                        <><span>Show less</span><ChevronUp size={13} /></>
+                      ) : (
+                        <><span>Read full note</span><ChevronDown size={13} /></>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center space-x-2 shrink-0">
+              <div className="brain-dump-actions flex items-center space-x-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleOrganize(item)}

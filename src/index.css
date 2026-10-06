@@ -883,6 +883,50 @@ select:focus-visible {
 .assistant-image-button { color: hsl(var(--muted-foreground)); }
 .assistant-image-attachment button:hover,
 .assistant-image-button:hover { color: hsl(var(--foreground)); background: hsl(var(--surface-200)); }
+.brain-dump-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+.brain-dump-copy {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+  padding-top: 5px;
+}
+.brain-dump-copy > span { margin-top: 4px; }
+.brain-dump-copy p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: hsl(var(--foreground));
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.brain-dump-copy p.expanded { display: block; overflow: visible; -webkit-line-clamp: unset; }
+.brain-dump-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 5px;
+  color: hsl(var(--muted-foreground));
+  font-size: 9px;
+  font-weight: 600;
+}
+.brain-dump-expand:hover { color: hsl(var(--foreground)); }
+@media (max-width: 640px) {
+  .brain-dump-item { grid-template-columns: 1fr; }
+  .brain-dump-actions { justify-content: flex-end; padding-left: 20px; }
+  .brain-dump-actions > button:first-child { flex: 1; justify-content: center; }
+  .brain-dump-actions > button:last-child { opacity: 1; }
+}
 @media (max-width: 800px) {
   .landing-hero {
     grid-template-columns: 1fr;
