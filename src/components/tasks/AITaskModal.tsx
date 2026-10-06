@@ -106,8 +106,8 @@ export const AITaskModal: React.FC<Props> = ({
   };
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !Number.isFinite(duration) || duration < 1) {
-      setError("Add a title and a duration of at least one minute.");
+    if (!title.trim() || !Number.isFinite(duration) || duration < 1 || duration > 1440) {
+      setError("Add a title and choose a duration between 1 minute and 24 hours.");
       return;
     }
     try {
@@ -294,16 +294,16 @@ export const AITaskModal: React.FC<Props> = ({
                     className="task-range duration-range"
                     type="range"
                     min="5"
-                    max="240"
+                    max="1440"
                     step="5"
                     value={duration}
                     aria-label="Estimated duration in minutes"
-                    style={{ "--range-progress": `${((duration - 5) / 235) * 100}%` } as React.CSSProperties}
+                    style={{ "--range-progress": `${((duration - 5) / 1435) * 100}%` } as React.CSSProperties}
                     onChange={(event) => setDuration(Number(event.target.value))}
                   />
-                  <div className="range-labels"><span>5m</span><span>1h</span><span>2h</span><span>4h</span></div>
+                  <div className="range-labels"><span>5m</span><span>6h</span><span>12h</span><span>24h</span></div>
                   <div className="task-quick-picks">
-                    {[15, 30, 60, 120].map((minutes) => <button key={minutes} type="button" aria-pressed={duration === minutes} onClick={() => setDuration(minutes)}>{minutes < 60 ? `${minutes}m` : `${minutes / 60}h`}</button>)}
+                    {[15, 30, 60, 240, 720, 1440].map((minutes) => <button key={minutes} type="button" aria-pressed={duration === minutes} onClick={() => setDuration(minutes)}>{minutes < 60 ? `${minutes}m` : `${minutes / 60}h`}</button>)}
                   </div>
                 </div>
               )}

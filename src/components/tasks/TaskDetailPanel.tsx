@@ -316,11 +316,14 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
               <input
                 type="number"
                 min="5"
+                max="1440"
                 step="5"
                 aria-label="Task duration in minutes"
                 value={duration}
                 onChange={(e) =>
-                  setDuration(parseInt(e.target.value, 10) || 30)
+                  setDuration(
+                    Math.min(1440, Math.max(5, parseInt(e.target.value, 10) || 30)),
+                  )
                 }
                 onBlur={handleSave}
                 className="w-14 bg-surface-100 border border-surface-border rounded px-1.5 py-0.5 text-foreground text-[11px] text-right font-mono"
