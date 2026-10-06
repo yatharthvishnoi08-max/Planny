@@ -15,6 +15,7 @@ import {
   Play,
   LayoutDashboard,
   Brain,
+  UsersRound,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { Task, Project, Note, Resource, BrainDump } from "../../types/database";
@@ -254,6 +255,18 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   <span>
                     <strong>Brain dump</strong>
                     <small>Capture everything on your mind</small>
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    onNavigateTab?.("community");
+                    onClose();
+                  }}
+                >
+                  <UsersRound size={15} />
+                  <span>
+                    <strong>Open community</strong>
+                    <small>Share progress or ask for support</small>
                   </span>
                 </button>
               </div>

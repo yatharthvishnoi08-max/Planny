@@ -11,6 +11,29 @@ export type RoutineFrequency =
 export type NoteType = "note" | "fact" | "idea" | "study";
 export type ResourceType = "link" | "youtube" | "document" | "article";
 export type BrainDumpStatus = "inbox" | "converted" | "archived";
+export type CommunityCategory =
+  | "progress"
+  | "win"
+  | "question"
+  | "accountability";
+
+export interface CommunityPost {
+  id: string;
+  user_id: string;
+  author_name: string;
+  author_avatar_url: string | null;
+  category: CommunityCategory;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommunityReaction {
+  post_id: string;
+  user_id: string;
+  reaction: "support";
+  created_at: string;
+}
 
 export interface Profile {
   id: string;

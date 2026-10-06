@@ -227,7 +227,7 @@ export const OnboardingModal: React.FC<{
         conversation_id: memory.conversationId,
         user_id: user.id,
         role: "assistant",
-        content: `You’re set, ${name.split(" ")[0] || "friend"}. Here’s your quick tour:\n\n• **Today** is your daily command center.\n• **Upcoming** and **Calendar** show what’s ahead.\n• **Projects** group bigger goals.\n• **Routines** keep repeat work consistent.\n• **Brain dump** catches messy thoughts fast.\n• **Notes & links** keeps useful knowledge nearby.\n• **Focus** helps you finish one thing at a time.\n\nI’ll remember your preferences and our conversations. Tell me what you want to accomplish next—or ask me what to do now.`,
+        content: `You’re set, ${name.split(" ")[0] || "friend"}. Here’s your quick tour:\n\n• **Today** is your daily command center.\n• **Upcoming** and **Calendar** show what’s ahead.\n• **Projects** group bigger goals.\n• **Routines** keep repeat work consistent.\n• **Brain dump** catches messy thoughts fast.\n• **Notes & links** keeps useful knowledge nearby.\n• **Focus** helps you finish one thing at a time.\n• **Community** is where you can share progress, ask questions, and support other members.\n\nI’ll remember your preferences and our conversations. Tell me what you want to accomplish next—or ask me what to do now.`,
         created_at: new Date().toISOString(),
       };
       await saveAssistantMemory(user.id, {

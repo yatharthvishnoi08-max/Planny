@@ -24,6 +24,7 @@ import { KnowledgeView } from "./components/views/KnowledgeView";
 import { AIAssistantView } from "./components/views/AIAssistantView";
 import { SettingsView } from "./components/views/SettingsView";
 import { FocusInsightsView } from "./components/views/FocusInsightsView";
+import { CommunityView } from "./components/views/CommunityView";
 import { TaskDetailPanel } from "./components/tasks/TaskDetailPanel";
 import { AITaskModal } from "./components/tasks/AITaskModal";
 import { FocusMode } from "./components/focus/FocusMode";
@@ -312,6 +313,8 @@ export const App: React.FC = () => {
       {currentTab === "ai-assistant" && (
         <AIAssistantView onStartFocus={handleStartFocusById} />
       )}
+
+      {currentTab === "community" && <CommunityView />}
 
       {currentTab === "settings" && <SettingsView />}
 

@@ -17,6 +17,7 @@ import {
   ChevronRight,
   HelpCircle,
   ChartNoAxesCombined,
+  UsersRound,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
@@ -32,6 +33,7 @@ export type NavigationTab =
   | "brain-dump"
   | "knowledge"
   | "ai-assistant"
+  | "community"
   | "settings";
 interface AppLayoutProps {
   currentTab: NavigationTab;
@@ -52,6 +54,7 @@ const navigation = [
   { id: "brain-dump", label: "Brain dump", icon: Inbox },
   { id: "knowledge", label: "Notes & links", icon: BookOpen },
   { id: "ai-assistant", label: "Assistant", icon: Sparkles },
+  { id: "community", label: "Community", icon: UsersRound },
 ] as const;
 export function AppLayout({
   currentTab,
@@ -195,6 +198,16 @@ export function AppLayout({
         <nav aria-label="Tools" className="shell-nav-group">
           {navigation
             .filter((item) => ["brain-dump", "ai-assistant"].includes(item.id))
+            .map(renderNav)}
+        </nav>
+        <div className="shell-divider" />
+        <span className="nav-section-title">
+          <b>Together</b>
+          <i />
+        </span>
+        <nav aria-label="Community" className="shell-nav-group">
+          {navigation
+            .filter((item) => item.id === "community")
             .map(renderNav)}
         </nav>
         <div className="shell-divider" />

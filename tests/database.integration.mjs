@@ -37,10 +37,14 @@ await db.exec(
   fs.readFileSync(root + "20261006010000_media_storage.sql", "utf8"),
 );
 await db.exec(
+  fs.readFileSync(root + "20261006020000_community.sql", "utf8"),
+);
+await db.exec(
   `GRANT USAGE ON SCHEMA public,auth,storage TO authenticated; GRANT ALL ON ALL TABLES IN SCHEMA public,storage TO authenticated; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth,storage TO authenticated; INSERT INTO auth.users VALUES ('11111111-1111-4111-8111-111111111111','a@test.invalid','{}'),('22222222-2222-4222-8222-222222222222','b@test.invalid','{}'); SET ROLE authenticated; SET request.jwt.claim.sub='11111111-1111-4111-8111-111111111111';`,
 );
 const owner = "11111111-1111-4111-8111-111111111111",
   id = "33333333-3333-4333-8333-333333333333";
+const communityPostId = "55555555-5555-4555-8555-555555555555";
 const task = {
   id,
   user_id: owner,
@@ -156,6 +160,22 @@ assert.equal(
     .request_count,
   50,
 );
+await db.query(
+  "INSERT INTO community_posts(id,user_id,author_name,category,content) VALUES ($1,$2,'Tester','progress','Shipped the first version')",
+  [communityPostId, "22222222-2222-4222-8222-222222222222"],
+);
+await db.query(
+  "INSERT INTO community_reactions(post_id,user_id) VALUES ($1,$2)",
+  [communityPostId, "22222222-2222-4222-8222-222222222222"],
+);
+assert.equal((await db.query("SELECT * FROM community_posts")).rows.length, 1);
+await assert.rejects(
+  db.query("INSERT INTO community_posts(user_id,author_name,content) VALUES ($1,'Wrong user','Nope')", [owner]),
+);
+await db.exec("SET request.jwt.claim.sub='11111111-1111-4111-8111-111111111111'");
+assert.equal((await db.query("SELECT * FROM community_posts")).rows.length, 1);
+await db.query("DELETE FROM community_posts WHERE id=$1", [communityPostId]);
+assert.equal((await db.query("SELECT * FROM community_posts")).rows.length, 1);
 console.log(
   "PASS: all SQL migrations, account RLS isolation, atomic task writes, and AI quota enforcement.",
 );
