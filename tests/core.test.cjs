@@ -240,6 +240,39 @@ test("routine recurrence handles weekdays, expiry, monthly end and interval days
     true,
   );
 });
+test("scheduled routines stay pending for their day and never carry completion forward", () => {
+  const { routineItemsForDate } = environment().load("routineTasks");
+  const routine = {
+    id: "routine-1",
+    active: true,
+    created_at: "2026-10-01T08:00:00+05:30",
+    frequency: "daily",
+    days_of_week: [1, 2, 3, 4, 5, 6, 7],
+    interval_days: 1,
+    end_date: null,
+  };
+  const completedOnMonday = {
+    id: "instance-1",
+    routine_id: routine.id,
+    date: "2026-10-05",
+    status: "completed",
+  };
+  const monday = routineItemsForDate(
+    [routine],
+    [completedOnMonday],
+    new Date("2026-10-05T12:00:00+05:30"),
+  );
+  const tuesday = routineItemsForDate(
+    [routine],
+    [completedOnMonday],
+    new Date("2026-10-06T12:00:00+05:30"),
+  );
+  assert.equal(monday.length, 1);
+  assert.equal(monday[0].completed, true);
+  assert.equal(tuesday.length, 1);
+  assert.equal(tuesday[0].completed, false);
+  assert.equal(tuesday[0].instance, undefined);
+});
 test("project priorities use numeric ranks with one as the highest", () => {
   const {
     projectPriority,

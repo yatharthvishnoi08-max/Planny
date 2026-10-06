@@ -20,6 +20,7 @@ import {
   MoreHorizontal,
   Play,
   Plus,
+  Repeat2,
   Sparkles,
   WandSparkles,
 } from "lucide-react";
@@ -35,6 +36,7 @@ import { availableMinutesToday } from "../../lib/dayPlanner";
 import { focusSecondsForDay, formatFocusTime } from "../../lib/focusAnalytics";
 import { PlanMyDayModal } from "../daily/PlanMyDayModal";
 import { triggerHaptic } from "../../lib/platform";
+import { routineItemsForDate } from "../../lib/routineTasks";
 
 interface TodayViewProps {
   tasks: Task[];
@@ -62,6 +64,7 @@ const greeting = () =>
 export function TodayView({
   tasks,
   routines,
+  routineInstances,
   focusSessions,
   dailyPlans,
   endOfDay = "21:00",
@@ -70,6 +73,7 @@ export function TodayView({
   onOpenAITaskModal,
   onOpenDayReview,
   onOpenAssistant,
+  onOpenRoutines,
   planRequest = 0,
 }: TodayViewProps) {
   const [filter, setFilter] = useState<"all" | "open" | "completed">("all");
@@ -82,6 +86,12 @@ export function TodayView({
     if (planRequest) setPlannerOpen(true);
   }, [planRequest]);
   const today = localDate();
+  const routineItems = useMemo(
+    () => routineItemsForDate(routines, routineInstances),
+    [routineInstances, routines, today],
+  );
+  const pendingRoutines = routineItems.filter((item) => !item.completed);
+  const completedRoutines = routineItems.filter((item) => item.completed);
   const pending = useMemo(
     () =>
       tasks
@@ -99,13 +109,15 @@ export function TodayView({
   const completed = tasks.filter(
     (task) => task.status === "completed" && isTodayTask(task),
   );
-  const totalTasks = pending.length + completed.length;
+  const pendingCount = pending.length + pendingRoutines.length;
+  const completedCount = completed.length + completedRoutines.length;
+  const totalTasks = pendingCount + completedCount;
   const completion = totalTasks
-    ? Math.round((completed.length / totalTasks) * 100)
+    ? Math.round((completedCount / totalTasks) * 100)
     : 0;
   const remainingMinutes = pending.reduce(
     (sum, task) => sum + task.estimated_duration_minutes,
-    0,
+    pendingRoutines.length * 30,
   );
   const availableMinutes = availableMinutesToday(endOfDay);
   const focusedToday = focusSecondsForDay(focusSessions, new Date());
@@ -278,6 +290,11 @@ export function TodayView({
     if (filter === "completed") return completed;
     return [...pending, ...completed];
   }, [completed, filter, pending]);
+  const filteredRoutines = useMemo(() => {
+    if (filter === "open") return pendingRoutines;
+    if (filter === "completed") return completedRoutines;
+    return routineItems;
+  }, [completedRoutines, filter, pendingRoutines, routineItems]);
   const projectGroups = useMemo(() => {
     const groups = new Map<
       string,
@@ -346,7 +363,7 @@ export function TodayView({
         <div className="today-progress-metrics progress-metrics-compact">
           <div>
             <strong>
-              {completed.length} / {totalTasks}
+              {completedCount} / {totalTasks}
             </strong>
             <span>tasks completed</span>
           </div>
@@ -374,8 +391,8 @@ export function TodayView({
               {(
                 [
                   ["all", "All tasks", totalTasks],
-                  ["open", "Open", pending.length],
-                  ["completed", "Finished", completed.length],
+                  ["open", "Open", pendingCount],
+                  ["completed", "Finished", completedCount],
                 ] as const
               ).map(([value, label, count]) => (
                 <button
@@ -389,6 +406,45 @@ export function TodayView({
               ))}
             </div>
           </div>
+          {filteredRoutines.length > 0 && (
+            <section className="today-routine-list" aria-label="Today's routines">
+              <header>
+                <div><Repeat2 size={15} /><strong>Today’s routines</strong></div>
+                <button type="button" onClick={onOpenRoutines}>Manage routines</button>
+              </header>
+              <div>
+                {filteredRoutines.map(({ routine, completed: done }) => (
+                  <motion.div
+                    layout
+                    className={`today-routine-task ${done ? "is-done" : ""}`}
+                    key={routine.id}
+                  >
+                    <button
+                      type="button"
+                      className="smart-task-check"
+                      aria-label={`${done ? "Reopen" : "Complete"} ${routine.title}`}
+                      onClick={() => {
+                        syncEngine.toggleRoutineCompletion(routine.id);
+                        triggerHaptic("success");
+                      }}
+                    >
+                      <Check size={13} />
+                    </button>
+                    <div>
+                      <strong>{routine.title}</strong>
+                      <span>{routine.time_of_day.slice(0, 5)} · {routine.frequency.replace(/_/g, " ")} · fresh each scheduled day</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => syncEngine.toggleRoutineCompletion(routine.id)}
+                    >
+                      <Check size={13} /> {done ? "Done today" : "Mark done"}
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
           <div className="today-task-organizer">
             <section className="project-task-folders" aria-label="Tasks by project">
               <div className="organizer-column-heading">
@@ -469,7 +525,7 @@ export function TodayView({
               )}
             </aside>
           </div>
-          {!filteredTasks.length && filter !== "completed" && (
+          {!filteredTasks.length && !filteredRoutines.length && filter !== "completed" && (
             <div className="compact-empty-state">
               <CheckCircle2 size={20} />
               <div>
