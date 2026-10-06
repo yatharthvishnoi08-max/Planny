@@ -8,6 +8,7 @@ import {
 import { syncEngine } from "./sync";
 import { isRealSupabaseConfigured, supabase } from "./supabase";
 import { projectPriority } from "./projectPriority";
+import { formatProjectName } from "./projectName";
 
 export interface ParsedTaskResult {
   title: string;
@@ -685,7 +686,7 @@ export async function processAssistantMessage(
       .slice(0, 12)
       .map((project, index) => ({
         id: project.id,
-        title: project.title,
+        title: formatProjectName(project.title),
         status: project.status,
         priorityNumber: projectPriority(project, index + 1),
       })),

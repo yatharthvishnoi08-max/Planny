@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
+import { formatProjectName } from "../../lib/projectName";
 import { localDate, dateAtTime } from "../../lib/dates";
 
 interface TaskDetailPanelProps {
@@ -253,7 +254,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
               <option value="">No Project</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.title}
+                  {formatProjectName(p.title)}
                 </option>
               ))}
             </select>

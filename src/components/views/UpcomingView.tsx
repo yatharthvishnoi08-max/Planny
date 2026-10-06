@@ -3,6 +3,7 @@ import React from "react";
 import { Task } from "../../types/database";
 import { Calendar, AlertCircle, Clock, Check, CheckCircle2 } from "lucide-react";
 import { formatMinutes } from "../../lib/utils";
+import { formatProjectName } from "../../lib/projectName";
 import { syncEngine } from "../../lib/sync";
 
 interface UpcomingViewProps {
@@ -45,7 +46,7 @@ export const UpcomingView: React.FC<UpcomingViewProps> = ({
                   </span>
                   {t.project && (
                     <span className="text-[10px] text-muted-foreground bg-surface-200 px-1.5 py-0.5 rounded border border-surface-border">
-                      {t.project.title}
+                      {formatProjectName(t.project.title)}
                     </span>
                   )}
                 </div>

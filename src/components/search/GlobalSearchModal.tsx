@@ -20,6 +20,7 @@ import {
 import { syncEngine } from "../../lib/sync";
 import { Task, Project, Note, Resource, BrainDump } from "../../types/database";
 import { recommendNextTask } from "../../lib/dayPlanner";
+import { formatProjectName } from "../../lib/projectName";
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -330,7 +331,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     <div className="flex items-center space-x-2.5">
                       <Folder className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span className="text-foreground group-hover:text-emerald-300 transition-colors font-medium">
-                        {p.title}
+                        {formatProjectName(p.title)}
                       </span>
                     </div>
                     <ArrowRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

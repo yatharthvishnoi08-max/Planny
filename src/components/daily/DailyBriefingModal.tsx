@@ -2,6 +2,7 @@ import { isTodayTask, isPending, routineOccursOn } from "../../lib/dates";
 import React from "react";
 import { Task, Routine } from "../../types/database";
 import { formatMinutes } from "../../lib/utils";
+import { formatProjectName } from "../../lib/projectName";
 import { Sun, ArrowRight, X } from "lucide-react";
 
 interface DailyBriefingModalProps {
@@ -44,7 +45,7 @@ export const DailyBriefingModal: React.FC<DailyBriefingModalProps> = ({
             )
               return "C Programming";
             if (t.title.toLowerCase().includes("dsa")) return "DSA";
-            return t.project?.title || null;
+            return t.project ? formatProjectName(t.project.title) : null;
           })
           .filter(Boolean),
       ),

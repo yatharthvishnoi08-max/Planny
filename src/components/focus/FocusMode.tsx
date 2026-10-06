@@ -3,6 +3,7 @@ import { Task, Subtask } from "../../types/database";
 import { Play, Pause, CheckCircle2, X, Sparkles, Check } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
+import { formatProjectName } from "../../lib/projectName";
 
 interface FocusModeProps {
   task: Task;
@@ -107,7 +108,7 @@ export const FocusMode: React.FC<FocusModeProps> = ({
         {!isCompletedSummary ? (
           <>
             <span className="text-xs uppercase tracking-widest text-indigo-400 font-semibold mb-2 block">
-              {task.project?.title || "DEEP FOCUS"}
+              {task.project ? formatProjectName(task.project.title) : "DEEP FOCUS"}
             </span>
 
             <h1 className="text-2xl sm:text-3xl font-medium tracking-tight mb-6 text-foreground">

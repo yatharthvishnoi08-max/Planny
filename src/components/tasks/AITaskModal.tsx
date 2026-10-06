@@ -18,6 +18,7 @@ import {
   isHostedAIAvailable,
 } from "../../lib/ai";
 import { localDate, dateAtTime } from "../../lib/dates";
+import { formatProjectName } from "../../lib/projectName";
 import { Priority, Project } from "../../types/database";
 interface Props {
   isOpen: boolean;
@@ -340,7 +341,7 @@ export const AITaskModal: React.FC<Props> = ({
                   </section>
                   <section className="visible-optional-section">
                     <header><span><FolderOpen size={16} /></span><div><strong>Project</strong><small>Keep it unassigned or choose its home</small></div></header>
-                    <label><span>Project</span><select value={projectId} onChange={(event) => { setProjectId(event.target.value); setAddProject(Boolean(event.target.value)); }}><option value="">No project</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}</select></label>
+                    <label><span>Project</span><select value={projectId} onChange={(event) => { setProjectId(event.target.value); setAddProject(Boolean(event.target.value)); }}><option value="">No project</option>{projects.map((project) => <option key={project.id} value={project.id}>{formatProjectName(project.title)}</option>)}</select></label>
                   </section>
                   <section className="visible-optional-section notes-steps-section">
                     <header><span><Plus size={16} /></span><div><strong>Notes & smaller steps</strong><small>Add context only if this task needs it</small></div></header>

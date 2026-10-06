@@ -3,6 +3,7 @@ import type { Project, Task } from "../../types/database";
 import { AlertTriangle, ArrowRight, Check, ChevronRight, Plus, Sparkles, Target, Trash2, Wand2, X } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
+import { formatProjectName } from "../../lib/projectName";
 import { isPending, localDate } from "../../lib/dates";
 import { moveProjectPriority, normalizeProjectPriorities, projectPriority } from "../../lib/projectPriority";
 import { projectPlanning, withProjectPlanning } from "../../lib/projectPlanning";
@@ -95,9 +96,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, initialPro
             const itemPlanning = projectPlanning(project);
             const itemOverdue = itemTasks.filter((task) => isPending(task) && task.deadline && localDate(new Date(task.deadline)) < localDate()).length;
             return <button key={project.id} className={project.id === currentProject?.id ? "active" : ""} onClick={() => setSelectedProjectId(project.id)}>
-              <span className="project-switcher-rank">{priority}</span><span className="project-switcher-copy"><strong>{project.title}</strong><small>{itemOverdue ? `${itemOverdue} overdue` : `${itemTasks.length - done} tasks left`}</small></span><span className="project-switcher-progress"><i style={{ width: `${percent}%` }} /></span>
+              <span className="project-switcher-rank">{priority}</span><span className="project-switcher-copy"><strong>{formatProjectName(project.title)}</strong><small>{itemOverdue ? `${itemOverdue} overdue` : `${itemTasks.length - done} tasks left`}</small></span><span className="project-switcher-progress"><i style={{ width: `${percent}%` }} /></span>
               {itemPlanning.targetDate && <time>{new Date(`${itemPlanning.targetDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</time>}
-              <span role="button" tabIndex={0} aria-label={`Delete ${project.title}`} className="project-switcher-delete" onClick={(event) => { event.stopPropagation(); setProjectToDelete(project); }} onKeyDown={(event) => { if (event.key === "Enter") setProjectToDelete(project); }}><Trash2 size={13} /></span>
+              <span role="button" tabIndex={0} aria-label={`Delete ${formatProjectName(project.title)}`} className="project-switcher-delete" onClick={(event) => { event.stopPropagation(); setProjectToDelete(project); }} onKeyDown={(event) => { if (event.key === "Enter") setProjectToDelete(project); }}><Trash2 size={13} /></span>
             </button>;
           })}
         </div>
@@ -105,7 +106,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, initialPro
 
       {currentProject && <main className="project-workspace">
         <section className="project-title-row">
-          <div><div className="project-title-line"><h2>{currentProject.title}</h2></div><p>{currentProject.description || "Give this project a clear outcome."}</p></div>
+          <div><div className="project-title-line"><h2>{formatProjectName(currentProject.title)}</h2></div><p>{currentProject.description || "Give this project a clear outcome."}</p></div>
           <div className="project-title-actions"><label>Rank <input type="number" min="1" max={Math.max(1, projects.length)} value={projectPriority(currentProject, 1)} onChange={(event) => moveProjectPriority(projects, currentProject.id, Number(event.target.value)).forEach((project) => syncEngine.saveProject(project))} /></label><button onClick={() => onAddTask(currentProject.id)}><Plus size={15} /> Add task</button><button className="icon-only" aria-label="Delete project" onClick={() => setProjectToDelete(currentProject)}><Trash2 size={15} /></button></div>
         </section>
 
@@ -129,7 +130,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, initialPro
         <div className="project-create-preview"><Wand2 size={17} /><span><strong>Planny will make:</strong><small>3 starter tasks · a weekly workload check</small></span></div><button className="project-create-submit" type="submit">Create my project <ArrowRight size={16} /></button>
       </form></section></div>}
 
-      {projectToDelete && <div className="project-modal-backdrop" onClick={(event) => event.target === event.currentTarget && setProjectToDelete(null)}><section className="project-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-project-title"><button className="project-delete-close" aria-label="Cancel project deletion" onClick={() => setProjectToDelete(null)}><X size={17} /></button><span className="project-delete-icon"><AlertTriangle size={21} /></span><div><span className="page-eyebrow">DELETE PROJECT</span><h3 id="delete-project-title">Delete “{projectToDelete.title}”?</h3><p>The project will be removed. Its {tasks.filter((task) => task.project_id === projectToDelete.id).length} tasks will stay in Planny under No Project.</p></div><div className="project-delete-actions"><button onClick={() => setProjectToDelete(null)}>Keep project</button><button className="danger" onClick={() => { const next = rankedProjects.find(({ project }) => project.id !== projectToDelete.id)?.project; syncEngine.deleteProject(projectToDelete.id); setSelectedProjectId(next?.id || ""); setProjectToDelete(null); }}><Trash2 size={14} /> Delete project</button></div></section></div>}
+      {projectToDelete && <div className="project-modal-backdrop" onClick={(event) => event.target === event.currentTarget && setProjectToDelete(null)}><section className="project-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-project-title"><button className="project-delete-close" aria-label="Cancel project deletion" onClick={() => setProjectToDelete(null)}><X size={17} /></button><span className="project-delete-icon"><AlertTriangle size={21} /></span><div><span className="page-eyebrow">DELETE PROJECT</span><h3 id="delete-project-title">Delete “{formatProjectName(projectToDelete.title)}”?</h3><p>The project will be removed. Its {tasks.filter((task) => task.project_id === projectToDelete.id).length} tasks will stay in Planny under No Project.</p></div><div className="project-delete-actions"><button onClick={() => setProjectToDelete(null)}>Keep project</button><button className="danger" onClick={() => { const next = rankedProjects.find(({ project }) => project.id !== projectToDelete.id)?.project; syncEngine.deleteProject(projectToDelete.id); setSelectedProjectId(next?.id || ""); setProjectToDelete(null); }}><Trash2 size={14} /> Delete project</button></div></section></div>}
     </div>
   );
 };

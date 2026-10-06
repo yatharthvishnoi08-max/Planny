@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
+import { formatProjectName } from "../../lib/projectName";
 import {
   dateAtTime,
   isPending,
@@ -223,7 +224,7 @@ export function TodayView({
           {task.project && (
             <>
               <i>·</i>
-              {task.project.title}
+              {formatProjectName(task.project.title)}
             </>
           )}
         </small>
@@ -309,7 +310,7 @@ export function TodayView({
       }
       groups.set(task.project_id, {
         id: task.project_id,
-        title: task.project?.title || "Project",
+        title: task.project ? formatProjectName(task.project.title) : "Project",
         color: task.project?.color || "#9cf177",
         tasks: [task],
       });
@@ -478,7 +479,7 @@ export function TodayView({
                       </span>
                       <span className="project-folder-title">
                         <small>PROJECT</small>
-                        <strong>{group.title}</strong>
+                        <strong>{formatProjectName(group.title)}</strong>
                       </span>
                       <span className="project-folder-summary">
                         {completedCount}/{group.tasks.length} done · {formatMinutes(minutes)}
