@@ -1,8 +1,9 @@
 import { localDate, isPending, taskScheduleBucket } from "../../lib/dates";
 import React from "react";
 import { Task } from "../../types/database";
-import { Calendar, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
+import { Calendar, AlertCircle, Clock, Check, CheckCircle2 } from "lucide-react";
 import { formatMinutes } from "../../lib/utils";
+import { syncEngine } from "../../lib/sync";
 
 interface UpcomingViewProps {
   tasks: Task[];
@@ -32,11 +33,11 @@ export const UpcomingView: React.FC<UpcomingViewProps> = ({
       ) : (
         <div className="space-y-2">
           {items.map((t) => (
-            <button
+            <div
               key={t.id}
-              onClick={() => onSelectTask(t)}
               className="upcoming-task p-3.5 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-border flex items-center justify-between cursor-pointer transition-colors"
             >
+              <button className="upcoming-task-main" onClick={() => onSelectTask(t)}>
               <div className="upcoming-task-copy">
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-medium text-foreground">
@@ -66,7 +67,9 @@ export const UpcomingView: React.FC<UpcomingViewProps> = ({
                   {t.priority}
                 </span>
               </div>
-            </button>
+              </button>
+              <button className="upcoming-mark-done" aria-label={`Mark ${t.title} done`} onClick={() => syncEngine.toggleTaskCompletion(t.id)}><Check size={13} /> Mark done</button>
+            </div>
           ))}
         </div>
       )}

@@ -217,45 +217,48 @@ export function TodayView({
         </small>
       </button>
       {!done && (
-        <div className="smart-task-actions">
+        <div className="smart-task-controls">
           <button
+            className="task-mark-done"
             onClick={() => toggle(task)}
             aria-label={`Complete ${task.title}`}
           >
             <Check size={14} />
-            <span>Done</span>
+            <span>Mark done</span>
           </button>
-          <button
-            onClick={() => onStartFocus(task)}
-            aria-label={`Focus on ${task.title}`}
-          >
-            <Play size={14} />
-            <span>Start</span>
-          </button>
-          <button
-            onClick={() =>
-              setRescheduling(rescheduling === task.id ? null : task.id)
-            }
-            aria-label={`Reschedule ${task.title}`}
-            aria-expanded={rescheduling === task.id}
-            aria-haspopup="menu"
-          >
-            <CalendarClock size={14} />
-            <span>Move</span>
-          </button>
-          <button
-            onClick={onOpenAssistant}
-            aria-label={`Ask Planny about ${task.title}`}
-          >
-            <WandSparkles size={14} />
-            <span>AI</span>
-          </button>
-          <button
-            onClick={() => onSelectTask(task)}
-            aria-label={`More actions for ${task.title}`}
-          >
-            <MoreHorizontal size={15} />
-          </button>
+          <div className="smart-task-actions">
+            <button
+              onClick={() => onStartFocus(task)}
+              aria-label={`Focus on ${task.title}`}
+            >
+              <Play size={14} />
+              <span>Start</span>
+            </button>
+            <button
+              onClick={() =>
+                setRescheduling(rescheduling === task.id ? null : task.id)
+              }
+              aria-label={`Reschedule ${task.title}`}
+              aria-expanded={rescheduling === task.id}
+              aria-haspopup="menu"
+            >
+              <CalendarClock size={14} />
+              <span>Move</span>
+            </button>
+            <button
+              onClick={onOpenAssistant}
+              aria-label={`Ask Planny about ${task.title}`}
+            >
+              <WandSparkles size={14} />
+              <span>AI</span>
+            </button>
+            <button
+              onClick={() => onSelectTask(task)}
+              aria-label={`More actions for ${task.title}`}
+            >
+              <MoreHorizontal size={15} />
+            </button>
+          </div>
         </div>
       )}
       {rescheduling === task.id && (
