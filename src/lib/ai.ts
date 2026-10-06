@@ -34,6 +34,32 @@ export interface AIImageInput {
 
 export const isHostedAIAvailable = () => isRealSupabaseConfigured();
 
+export function publicAIErrorMessage(message: string, hasImage = false) {
+  const normalized = message.trim();
+  if (/daily ai limit/i.test(normalized))
+    return "You have reached today's AI limit. Try again tomorrow.";
+  if (/sign in/i.test(normalized)) return "Sign in to use Planny AI.";
+  if (/invalid image/i.test(normalized))
+    return "This image could not be read. Use a JPG, PNG, or WebP image up to 15 MB.";
+  if (
+    /retired|deprecated|provider|model|ollama|gemini|reference|\bref\s*:|api[_ -]?key|non-2xx|failed to send a request|fetch failed|edge function/i.test(
+      normalized,
+    )
+  )
+    return hasImage
+      ? "Image analysis is temporarily unavailable. Your screenshot is safe; try again in a moment."
+      : "Planny AI is temporarily unavailable. Your tasks are safe; try again in a moment.";
+  const safeMessages = [
+    "Image analysis is temporarily unavailable. Your screenshot is safe; try again in a moment.",
+    "Planny AI is temporarily unavailable. Your tasks are safe; try again in a moment.",
+  ];
+  return safeMessages.includes(normalized)
+    ? normalized
+    : hasImage
+      ? safeMessages[0]
+      : safeMessages[1];
+}
+
 /**
  * Natural Language Task Parser
  * Extracts Title, Deadline, Priority, and Subtasks from freeform text.
@@ -557,10 +583,7 @@ async function generateJSON(
         // Keep the SDK message when the response is not JSON.
       }
     }
-    if (/Failed to send a request|fetch failed|non-2xx/i.test(message))
-      message =
-        "Planny AI is temporarily unavailable. Your tasks are safe; try again in a moment.";
-    throw new Error(message);
+    throw new Error(publicAIErrorMessage(message, Boolean(image)));
   }
   if (!data || typeof data !== "object" || !("result" in data))
     throw new Error("AI returned an invalid response. Please try again.");

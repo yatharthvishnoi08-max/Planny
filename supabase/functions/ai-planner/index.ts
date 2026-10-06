@@ -16,9 +16,21 @@ type ImageInput = {
   mimeType: "image/jpeg" | "image/png" | "image/webp";
 };
 
+class AIProviderError extends Error {
+  constructor(public readonly kind: "text" | "vision") {
+    super(kind === "vision" ? "VISION_PROVIDER_UNAVAILABLE" : "TEXT_PROVIDER_UNAVAILABLE");
+  }
+}
+
+const publicProviderMessage = (error: unknown) => {
+  if (error instanceof AIProviderError && error.kind === "vision")
+    return "Image analysis is temporarily unavailable. Your screenshot is safe; try again in a moment.";
+  return "Planny AI is temporarily unavailable. Your tasks are safe; try again in a moment.";
+};
+
 async function callGemini(prompt: string, schema: object, image?: ImageInput) {
   const key = Deno.env.get("GEMINI_API_KEY");
-  if (!key) throw new Error("GEMINI_API_KEY is not configured.");
+  if (!key) throw new AIProviderError(image ? "vision" : "text");
   const model = Deno.env.get("AI_MODEL") || "gemini-3.5-flash-lite";
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -45,17 +57,26 @@ async function callGemini(prompt: string, schema: object, image?: ImageInput) {
     },
   );
   const payload = await response.json();
-  if (!response.ok)
-    throw new Error(payload?.error?.message || "Gemini request failed.");
+  if (!response.ok) {
+    console.error("Gemini provider request failed", {
+      status: response.status,
+      detail: payload?.error?.message,
+    });
+    throw new AIProviderError(image ? "vision" : "text");
+  }
   const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("Gemini returned no content.");
-  return JSON.parse(text);
+  if (!text) throw new AIProviderError(image ? "vision" : "text");
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Gemini returned invalid JSON", error);
+    throw new AIProviderError(image ? "vision" : "text");
+  }
 }
 
 async function callOllama(prompt: string, schema: object, image?: ImageInput) {
   const baseUrl = (Deno.env.get("OLLAMA_BASE_URL") || "").replace(/\/$/, "");
-  if (!baseUrl)
-    throw new Error("OLLAMA_BASE_URL must point to a server reachable from Supabase.");
+  if (!baseUrl) throw new AIProviderError(image ? "vision" : "text");
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   const key = Deno.env.get("OLLAMA_API_KEY");
   if (key) headers.Authorization = `Bearer ${key}`;
@@ -64,7 +85,7 @@ async function callOllama(prompt: string, schema: object, image?: ImageInput) {
     headers,
     body: JSON.stringify({
       model: image
-        ? Deno.env.get("AI_VISION_MODEL") || "qwen3-vl:235b-cloud"
+        ? Deno.env.get("AI_VISION_MODEL") || "qwen3.6:latest"
         : Deno.env.get("AI_MODEL") || "gemma4:31b",
       messages: [{
         role: "user",
@@ -79,12 +100,26 @@ async function callOllama(prompt: string, schema: object, image?: ImageInput) {
     signal: AbortSignal.timeout(45_000),
   });
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload?.error || "Ollama request failed.");
+  if (!response.ok) {
+    console.error("Ollama provider request failed", {
+      status: response.status,
+      model: image
+        ? Deno.env.get("AI_VISION_MODEL") || "qwen3.6:latest"
+        : Deno.env.get("AI_MODEL") || "gemma4:31b",
+      detail: payload?.error,
+    });
+    throw new AIProviderError(image ? "vision" : "text");
+  }
   const content = String(payload?.message?.content || "")
     .trim()
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "");
-  return JSON.parse(content);
+  try {
+    return JSON.parse(content);
+  } catch (error) {
+    console.error("Ollama returned invalid JSON", error);
+    throw new AIProviderError(image ? "vision" : "text");
+  }
 }
 
 export default {
@@ -146,9 +181,7 @@ export default {
       return json({ result });
     } catch (error) {
       console.error(error);
-      return json({
-        error: error instanceof Error ? error.message : "AI request failed.",
-      }, 500);
+      return json({ error: publicProviderMessage(error) }, 503);
     }
   },
 };

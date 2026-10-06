@@ -552,6 +552,21 @@ test("AI validation rejects invalid durations and unknown priority", () => {
   );
 });
 
+test("AI errors never expose provider model or reference details", () => {
+  const ai = environment().load("ai");
+  const raw = "qwen3-vl:235b was retired (ref: secret-provider-reference)";
+  const message = ai.publicAIErrorMessage(raw, true);
+  assert.equal(
+    message,
+    "Image analysis is temporarily unavailable. Your screenshot is safe; try again in a moment.",
+  );
+  assert.doesNotMatch(message, /qwen|retired|reference|ref:/i);
+  assert.equal(
+    ai.publicAIErrorMessage("Daily AI limit reached. Try again tomorrow."),
+    "You have reached today's AI limit. Try again tomorrow.",
+  );
+});
+
 test("offline task drafts honor explicit duration and deadline time", async () => {
   const ai = environment().load("ai");
   const short = await ai.parseNaturalLanguageTask(
