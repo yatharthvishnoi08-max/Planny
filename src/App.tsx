@@ -285,7 +285,6 @@ export const App: React.FC = () => {
       {currentTab === "projects" && (
         <ProjectsView
           projects={projects}
-          focusSessions={focusSessions}
           initialProjectId={searchTarget}
           onAddTask={(id) => {
             setTaskProjectId(id);
