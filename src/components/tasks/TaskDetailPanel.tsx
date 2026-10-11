@@ -19,6 +19,7 @@ import {
   Sparkles,
   CalendarClock,
   ArrowRight,
+  Check,
 } from "lucide-react";
 import { syncEngine } from "../../lib/sync";
 import { formatMinutes } from "../../lib/utils";
@@ -147,11 +148,37 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
     onClose();
   };
 
+  const handleToggleCompletion = () => {
+    const nextStatus: TaskStatus = status === "completed" ? "todo" : "completed";
+    const current = syncEngine.getTasks().find((item) => item.id === task.id) || task;
+    setStatus(nextStatus);
+    syncEngine.saveTask({
+      ...current,
+      title,
+      description,
+      priority,
+      status: nextStatus,
+      start_date: plannedDay || null,
+      deadline: deadline
+        ? dateAtTime(
+            deadline,
+            task.deadline
+              ? new Date(task.deadline).toTimeString().slice(0, 5)
+              : "18:00",
+          )
+        : null,
+      estimated_duration_minutes: duration,
+      project_id: projectId || null,
+      subtasks,
+      completed_at: nextStatus === "completed" ? new Date().toISOString() : null,
+    });
+  };
+
   return (
     <div className="task-inspector fixed inset-y-0 right-0 z-40 w-full sm:w-96 bg-surface-100 border-l border-surface-border p-6 shadow-2xl flex flex-col justify-between animate-slide-in-right">
       {/* Top action bar */}
       <div className="flex items-center justify-between pb-4 border-b border-surface-border">
-        <div className="flex items-center space-x-2">
+        <div className="task-inspector-actions flex items-center gap-2">
           <select
             aria-label="Task status"
             value={status}
@@ -186,6 +213,16 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           >
             <Play className="w-3.5 h-3.5" />
             <span>Focus</span>
+          </button>
+
+          <button
+            type="button"
+            aria-pressed={status === "completed"}
+            onClick={handleToggleCompletion}
+            className={`task-inspector-complete ${status === "completed" ? "is-complete" : ""}`}
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>{status === "completed" ? "Completed" : "Mark done"}</span>
           </button>
         </div>
 
@@ -479,7 +516,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           }}
           className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors"
         >
-          Done
+          Save &amp; close
         </button>
       </div>
     </div>
