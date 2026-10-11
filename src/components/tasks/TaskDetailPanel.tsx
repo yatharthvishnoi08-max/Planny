@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import {
   Task,
   Subtask,
@@ -54,6 +54,13 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
   const [projectId, setProjectId] = useState(task.project_id || "");
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const titleEditor = useRef<HTMLTextAreaElement>(null);
+
+  const resizeTitleEditor = () => {
+    if (!titleEditor.current) return;
+    titleEditor.current.style.height = "auto";
+    titleEditor.current.style.height = `${titleEditor.current.scrollHeight}px`;
+  };
 
   useEffect(() => {
     setTitle(task.title);
@@ -66,6 +73,8 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
     setProjectId(task.project_id || "");
     setSubtasks(task.subtasks || []);
   }, [task]);
+
+  useLayoutEffect(resizeTitleEditor, [title]);
 
   const handleSave = () => {
     const updated: Task = {
@@ -193,14 +202,21 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
         {/* Title */}
         <div>
-          <input
-            type="text"
+          <textarea
+            ref={titleEditor}
+            rows={1}
             aria-label="Task title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => setTitle(e.target.value.replace(/[\r\n]+/g, " "))}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
             onBlur={handleSave}
             placeholder="Task title"
-            className="w-full text-base font-medium bg-transparent border-0 border-b border-transparent hover:border-surface-border focus:border-indigo-500 text-foreground px-0 py-1 focus:outline-none transition-colors"
+            className="task-title-editor w-full text-base font-medium bg-transparent border-0 border-b border-transparent hover:border-surface-border focus:border-indigo-500 text-foreground px-0 py-1 focus:outline-none transition-colors"
           />
         </div>
 

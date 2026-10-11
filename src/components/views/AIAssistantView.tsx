@@ -447,6 +447,11 @@ export const AIAssistantView: React.FC<{
         </div>
       </motion.section>
 
+      <section className="assistant-chat-surface">
+        <div className="assistant-chat-heading">
+          <div><Sparkles size={15} /><span>Conversation</span></div>
+          <small>Workspace context is on</small>
+        </div>
       {error && (
         <p
           role="alert"
@@ -456,14 +461,14 @@ export const AIAssistantView: React.FC<{
         </p>
       )}
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-1 mb-4">
+      <div className="assistant-conversation flex-1 overflow-y-auto space-y-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} animate-fade-in`}
+            className={`assistant-message-row ${msg.role === "user" ? "is-user" : "is-assistant"} flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} animate-fade-in`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
+              className={`assistant-message-bubble ${msg.role === "user" ? "is-user" : "is-assistant"} max-w-[85%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
                 msg.role === "user"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "bg-surface-100 border border-surface-border text-foreground shadow-sm"
@@ -562,7 +567,7 @@ export const AIAssistantView: React.FC<{
       </div>
 
       {/* Quick Suggestions Carousel */}
-      <div className="flex items-center space-x-1.5 overflow-x-auto pb-2 shrink-0">
+      <div className="assistant-quick-prompts flex items-center space-x-1.5 overflow-x-auto shrink-0">
         {QUICK_SUGGESTIONS.map((s, idx) => (
           <button
             key={idx}
@@ -576,7 +581,7 @@ export const AIAssistantView: React.FC<{
       </div>
 
       {/* Input box */}
-      <div className="pt-2 shrink-0">
+      <div className="assistant-composer shrink-0">
         {selectedImage && imagePreviewUrl && (
           <div className="assistant-image-attachment">
             <img src={imagePreviewUrl} alt="Image ready for analysis" />
@@ -629,6 +634,7 @@ export const AIAssistantView: React.FC<{
           </button>
         </form>
       </div>
+      </section>
     </div>
   );
 };

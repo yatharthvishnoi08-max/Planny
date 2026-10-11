@@ -4793,6 +4793,18 @@ button:active:not(:disabled) {
   border-radius: 14px;
   background: #a493ff12;
 }
+.task-title-editor {
+  display: block;
+  height: auto;
+  min-height: 38px;
+  max-height: none;
+  overflow: hidden;
+  resize: none;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 @keyframes composer-pop {
   from {
     opacity: 0;

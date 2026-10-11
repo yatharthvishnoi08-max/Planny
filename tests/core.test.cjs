@@ -178,30 +178,33 @@ test("Today excludes future and cancelled tasks, includes overdue and today comp
 });
 test("unfinished tasks carry into the new day while routines and completed work stay put", () => {
   const { SyncEngine } = environment().load("sync");
+  const { localDate } = environment().load("dates");
   const engine = new SyncEngine();
   engine.setUser("local:rollover");
-  const unfinished = engine.saveTask(task({ start_date: "2026-10-01" }));
+  const plannedDay = localDate();
+  const nextDate = new Date();
+  nextDate.setDate(nextDate.getDate() + 1);
+  const rolloverDay = localDate(nextDate);
+  const unfinished = engine.saveTask(task({ start_date: plannedDay }));
   const routine = engine.saveTask(
-    task({ start_date: "2026-10-01", is_routine: true }),
+    task({ start_date: plannedDay, is_routine: true }),
   );
   const completed = engine.saveTask(
-    task({ start_date: "2026-10-01", status: "completed" }),
+    task({ start_date: plannedDay, status: "completed" }),
   );
-  assert.ok(
-    engine.rollOverUnfinishedTasks(new Date("2026-10-07T08:00:00+05:30")) >= 1,
-  );
+  assert.ok(engine.rollOverUnfinishedTasks(nextDate) >= 1);
   const tasks = engine.getTasks();
   assert.equal(
     tasks.find((item) => item.id === unfinished.id).start_date,
-    "2026-10-07",
+    rolloverDay,
   );
   assert.equal(
     tasks.find((item) => item.id === routine.id).start_date,
-    "2026-10-01",
+    plannedDay,
   );
   assert.equal(
     tasks.find((item) => item.id === completed.id).start_date,
-    "2026-10-01",
+    plannedDay,
   );
 });
 test("routine recurrence handles weekdays, expiry, monthly end and interval days", () => {
