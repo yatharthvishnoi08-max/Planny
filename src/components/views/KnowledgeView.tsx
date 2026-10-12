@@ -572,8 +572,8 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-surface-100 border border-surface-border p-6 shadow-2xl">
+        <div className="knowledge-modal-backdrop fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+          <div className="knowledge-add-modal w-full max-w-md rounded-2xl border p-6 shadow-2xl">
             <h3 className="text-base font-medium text-foreground mb-3">
               {modalType === "video"
                 ? "Add Video Task / Resource"
@@ -722,7 +722,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({
                 />
               </div>
 
-              <div className="flex justify-end space-x-2 pt-2">
+              <div className="knowledge-modal-actions flex justify-end space-x-2 pt-2">
                 <button
                   type="button"
                   disabled={uploading}

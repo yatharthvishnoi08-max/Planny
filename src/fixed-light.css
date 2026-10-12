@@ -220,6 +220,25 @@
 /* Modals and mobile */
 .modal-backdrop,.project-modal-backdrop,.mobile-sheet-backdrop { background:#25283a70; backdrop-filter:blur(15px) saturate(.85); }
 .composer,.task-inspector,.project-create-modal,.project-delete-dialog,.mobile-sheet { color:#1b1e27; border-color:#d8dbe4; background:#fff; box-shadow:0 30px 90px #2025362b; }
+.project-modal-backdrop,.knowledge-modal-backdrop { min-height:100dvh; padding:clamp(14px,3vh,28px); overflow-y:auto; overscroll-behavior:contain; }
+.project-create-modal,.knowledge-add-modal { margin:auto; max-height:calc(100dvh - 28px); overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.knowledge-modal-backdrop { position:fixed; inset:0; z-index:80; display:flex; align-items:center; justify-content:center; background:#25283a70; backdrop-filter:blur(15px) saturate(.85); }
+.knowledge-add-modal { color:#1b1e27; border-color:#d8dbe4; background:#fff; box-shadow:0 30px 90px #2025362b; }
+.knowledge-add-modal form { display:grid; gap:13px; }.knowledge-add-modal form.space-y-3>*+* { margin-top:0; }
+.knowledge-add-modal input,.knowledge-add-modal textarea,.knowledge-add-modal select { min-height:42px; color:#1b1e27!important; border-color:#cfd3dd!important; background:#fff!important; }
+.knowledge-add-modal textarea { min-height:92px; }.knowledge-modal-actions { position:sticky; bottom:-24px; margin:4px -24px -24px!important; padding:14px 24px 18px; border-top:1px solid #e2e4ea; background:#fff; }
+
+.assistant-page .assistant-message-row.is-user .assistant-message-bubble,
+.assistant-page .assistant-message-row.is-user .assistant-message-text { color:#fff!important; background:#111!important; }
+.assistant-page .assistant-message-row.is-user .assistant-message-text :is(p,strong,span,div) { color:#fff!important; }
+.assistant-page .assistant-message-row.is-assistant .assistant-message-bubble,
+.assistant-page .assistant-message-row.is-assistant .assistant-message-text { color:#171717!important; background:#f5f5f5!important; }
+.assistant-page .assistant-message-row.is-assistant .assistant-message-text :is(p,strong,span,div) { color:#171717!important; }
+@media (max-width:600px) {
+  .project-modal-backdrop,.knowledge-modal-backdrop { align-items:center!important; padding:10px; }
+  .project-create-modal,.knowledge-add-modal { max-height:calc(100dvh - 20px); margin:auto; }
+  .knowledge-add-modal { padding:20px 16px; }.knowledge-modal-actions { bottom:-20px; margin:4px -16px -20px!important; padding:13px 16px 16px; }
+}
 .mobile-navigation { border-color:#d8dbe4; background:#ffffffed; box-shadow:0 -10px 35px #232a3b12; backdrop-filter:blur(18px); }
 .mobile-navigation button { color:#666d7b; }.mobile-navigation [aria-current="page"] { color:#5046c8; }
 .mobile-navigation .mobile-add { color:#fff; background:linear-gradient(145deg,#665be8,#5045cc); box-shadow:0 8px 20px #5b50df28; }
