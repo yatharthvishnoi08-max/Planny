@@ -406,7 +406,7 @@ export const AIAssistantView: React.FC<{
       {error && (
         <p
           role="alert"
-          className="mb-3 p-3 rounded-xl bg-red-500/10 text-red-400 text-sm"
+          className="assistant-error"
         >
           {error}
         </p>
@@ -421,8 +421,8 @@ export const AIAssistantView: React.FC<{
             <div
               className={`assistant-message-bubble ${msg.role === "user" ? "is-user" : "is-assistant"} max-w-[85%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
                 msg.role === "user"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "bg-surface-100 border border-surface-border text-foreground shadow-sm"
+                  ? "text-white shadow-sm"
+                  : "shadow-sm"
               }`}
             >
               <MessageText content={msg.content} />
@@ -432,7 +432,7 @@ export const AIAssistantView: React.FC<{
                 msg.actions.map((act) => (
                   <div
                     key={act.id}
-                    className="mt-3.5 p-3 rounded-xl bg-surface-200/80 border border-surface-border text-xs"
+                    className="assistant-action-card mt-3.5 p-3 rounded-xl text-xs"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="assistant-action-label font-semibold uppercase tracking-wider text-[11px]">
@@ -445,7 +445,7 @@ export const AIAssistantView: React.FC<{
                       </span>
                     </div>
 
-                    <p className="font-medium text-foreground mb-3">
+                    <p className="assistant-action-title font-medium mb-3">
                       {act.title}
                     </p>
                     {act.type === "create_task" && Array.isArray(act.payload.tasks) && (
@@ -465,18 +465,18 @@ export const AIAssistantView: React.FC<{
                       </div>
                     )}
                     {act.type === "reschedule_tasks" && (
-                      <p className="mb-3 text-muted-foreground">
+                      <p className="assistant-action-detail mb-3">
                         {act.payload.taskIds?.length || 0} tasks →{" "}
                         {act.payload.targetDate}. Deadline times are preserved.
                       </p>
                     )}
 
                     {act.status === "proposed" && (
-                      <div className="flex items-center space-x-2 justify-end pt-2 border-t border-surface-border">
+                      <div className="assistant-action-controls flex items-center space-x-2 justify-end pt-2 border-t">
                         <button
                           type="button"
                           onClick={() => handleDismissAction(act.id, msg.id)}
-                          className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+                          className="assistant-dismiss-action px-2.5 py-1 text-xs"
                         >
                           Dismiss
                         </button>
@@ -494,7 +494,7 @@ export const AIAssistantView: React.FC<{
                 ))}
             </div>
 
-            <span className="text-[10px] text-muted-foreground mt-1 px-1 font-mono">
+            <span className="assistant-message-time text-[10px] mt-1 px-1 font-mono">
               {new Date(msg.created_at).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -520,7 +520,7 @@ export const AIAssistantView: React.FC<{
             key={idx}
             type="button"
             onClick={() => handleSend(s)}
-            className="px-2.5 py-1 bg-surface-100 hover:bg-surface-200 border border-surface-border text-muted-foreground hover:text-foreground rounded-lg text-xs whitespace-nowrap transition-colors"
+            className="px-2.5 py-1 border rounded-lg text-xs whitespace-nowrap transition-colors"
           >
             {s}
           </button>
@@ -541,7 +541,7 @@ export const AIAssistantView: React.FC<{
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Ask Planny to plan, prioritize, reschedule, or organize your work…"
-            className="w-full bg-surface-100 border border-surface-border rounded-xl pl-4 pr-12 py-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none transition-colors shadow-sm"
+            className="w-full border rounded-xl pl-4 pr-12 py-3 text-xs sm:text-sm focus:outline-none transition-colors shadow-sm"
           />
           <button
             type="submit"
