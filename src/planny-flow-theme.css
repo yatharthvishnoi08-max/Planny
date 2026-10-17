@@ -1032,3 +1032,53 @@ body {
   min-height: auto;
   padding-top: clamp(32px, 4vw, 56px);
 }
+
+/* Keep panel gutters explicit so the shared section grid cannot erase them. */
+.lp-clear-main > .lp-section.lp-simple-ai {
+  padding: clamp(28px, 4.5vw, 64px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(28px, 4vw, 60px);
+}
+.lp-simple-ai > div { min-width: 0; }
+.lp-section.lp-simple-ai h2 {
+  max-width: 12ch;
+  font-size: clamp(38px, 4.2vw, 60px);
+  line-height: 1.06;
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+.lp-simple-ai .lp-eyebrow { font-size: 10px; line-height: 1.6; }
+.lp-chat-preview > p.assistant strong { display: inline; }
+.lp-ai-points svg { flex-shrink: 0; }
+.lp-ai-points span { align-items: flex-start; line-height: 1.6; }
+.lp-typed-line { position: relative; }
+.lp-typed-reserve { display: block; visibility: hidden; }
+.lp-typed-visible { position: absolute; inset: 0; }
+.lp-typing-caret {
+  display: inline-block;
+  width: .035em;
+  height: .7em;
+  margin-left: .035em;
+  vertical-align: baseline;
+  background: currentColor;
+  animation: lp-caret-blink .65s steps(1) infinite;
+}
+@keyframes lp-caret-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .lp-process-grid article { transition: box-shadow .25s ease; }
+  .lp-process-grid article:hover { box-shadow: 9px 9px 0 var(--tone); }
+  .lp-primary svg, .lp-clear-actions a svg { transition: transform .25s ease; }
+  .lp-primary:hover svg, .lp-clear-actions a:hover svg { transform: translateX(4px); }
+  .lp-preview-task { animation: lp-task-enter .65s both; }
+  .lp-preview-task:nth-child(2) { animation-delay: .35s; }
+  .lp-preview-task:nth-child(3) { animation-delay: .5s; }
+  .lp-preview-task:nth-child(4) { animation-delay: .65s; }
+}
+@keyframes lp-task-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 1000px) {
+  .lp-clear-main > .lp-section.lp-simple-ai { grid-template-columns: 1fr; }
+  .lp-section.lp-simple-ai h2 { max-width: 18ch; }
+}

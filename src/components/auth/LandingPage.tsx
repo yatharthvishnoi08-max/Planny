@@ -64,6 +64,33 @@ const colors = [
   "#8be0c4",
 ];
 const example = "Revise Physics, finish my project, and go for a workout";
+function HeroTypingLine() {
+  const text = "Know what to do next.";
+  const reduce = useReducedMotion();
+  const [length, setLength] = useState(0);
+  useEffect(() => {
+    if (reduce) return;
+    let timer: ReturnType<typeof setTimeout>;
+    let count = 0;
+    const type = () => {
+      count += 1;
+      setLength(count);
+      if (count < text.length) timer = setTimeout(type, 65);
+    };
+    timer = setTimeout(type, 450);
+    return () => clearTimeout(timer);
+  }, [reduce]);
+  return (
+    <span className="lp-typed-line" aria-label={text}>
+      <span className="lp-typed-reserve" aria-hidden="true">{text}</span>
+      <span className="lp-typed-visible" aria-hidden="true">
+        {reduce ? text : text.slice(0, length)}
+        {!reduce && length < text.length && <i className="lp-typing-caret" />}
+      </span>
+    </span>
+  );
+}
+
 function Reveal({
   children,
   className = "",
@@ -487,7 +514,7 @@ export const LandingPage: React.FC = () => {
               </span>
               <h1>
                 Plan your day.
-                <span>Know what to do next.</span>
+                <HeroTypingLine />
               </h1>
               <p>
                 Planny puts your tasks, projects and routines in one clear
@@ -590,11 +617,15 @@ export const LandingPage: React.FC = () => {
                 ["02", "Make a realistic plan", "Add time estimates, priorities and deadlines. Planny shows what needs attention first.", <CalendarCheck2 size={25} />],
                 ["03", "Focus and finish", "Start a focus session, mark work done, and see how your time and progress improve.", <TimerReset size={25} />],
               ].map(([number, title, copy, icon], index) => (
-                <article key={String(number)} style={{ "--tone": colors[index] } as React.CSSProperties}>
+                <motion.article key={String(number)}
+                  initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }}
+                  transition={{ duration: .5, delay: index * .12 }}
+                  style={{ "--tone": colors[index] } as React.CSSProperties}>
                   <div><span>{number}</span>{icon}</div>
                   <h3>{title}</h3>
                   <p>{copy}</p>
-                </article>
+                </motion.article>
               ))}
             </div>
           </Reveal>
@@ -649,10 +680,10 @@ export const LandingPage: React.FC = () => {
           <Reveal id="ai" className="lp-section lp-simple-ai">
             <div>
               <span className="lp-eyebrow">AN ASSISTANT THAT KNOWS YOUR WORKSPACE</span>
-              <h2>Ask a normal question. Get an answer based on your actual tasks.</h2>
+              <h2>Less guessing. A clear next step.</h2>
               <p>
-                Planny’s assistant can see your tasks, projects, routines and recent chat context.
-                It suggests useful actions, but you approve every change before it touches your plan.
+                Ask what to work on, break a task into steps, or plan tomorrow.
+                Planny uses your tasks and available time to help. You approve the changes.
               </p>
               <div className="lp-ai-points">
                 <span><Check size={15} /> “What should I do in the next 45 minutes?”</span>
@@ -662,11 +693,19 @@ export const LandingPage: React.FC = () => {
             </div>
             <div className="lp-chat-preview">
               <div><img src="/planny-icon.svg" alt="" /><span><strong>Planny Assistant</strong><small>Uses your workspace context</small></span><i /></div>
-              <p className="user">I have one hour. What should I work on?</p>
-              <p className="assistant">
+              <motion.p className="user"
+                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .6 }}
+                transition={{ duration: .45, delay: .15 }}
+              >I have one hour. What should I work on?</motion.p>
+              <motion.p className="assistant"
+                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .6 }}
+                transition={{ duration: .5, delay: .55 }}
+              >
                 Start with <strong>Finish the project outline</strong>. It is due tomorrow and needs 45 minutes.
                 You will still have 15 minutes to review your notes.
-              </p>
+              </motion.p>
               <div className="lp-chat-action"><span>Suggested action</span><strong>Start 45-minute focus session</strong><button>Review action</button></div>
             </div>
           </Reveal>
