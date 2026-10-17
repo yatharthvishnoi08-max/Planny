@@ -364,12 +364,12 @@ body {
 .lp-clear-hero {
   width: min(1240px, calc(100% - 48px));
   max-width: none;
-  min-height: min(900px, calc(100svh - 12px));
+  min-height: auto;
   grid-template-columns: minmax(0, .92fr) minmax(560px, 1.08fr);
   gap: clamp(42px, 6vw, 92px);
   margin-inline: auto;
   padding-inline: 0;
-  padding-top: clamp(126px, 11vw, 168px);
+  padding-top: clamp(32px, 4vw, 56px);
   padding-bottom: 105px;
 }
 
@@ -1025,4 +1025,10 @@ body {
     transition-duration:.01ms!important;
     scroll-behavior:auto!important;
   }
+}
+
+/* The sticky header occupies its own space; keep the hero close beneath it. */
+.lp-hero.lp-clear-hero {
+  min-height: auto;
+  padding-top: clamp(32px, 4vw, 56px);
 }
