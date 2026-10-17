@@ -16,8 +16,13 @@ import {
   ChevronLeft,
   Sparkles,
   X,
-  Bell,
   Menu,
+  BrainCircuit,
+  CalendarCheck2,
+  FolderKanban,
+  ListChecks,
+  Repeat2,
+  TimerReset,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./landing.css";
@@ -344,8 +349,7 @@ export const LandingPage: React.FC = () => {
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [name, setName] = useState("");
-  const [organized, setOrganized] = useState(false),
-    [menu, setMenu] = useState(false);
+  const [menu, setMenu] = useState(false);
   const dialog = useRef<HTMLDivElement>(null);
   const go = () => {
     document
@@ -432,17 +436,17 @@ export const LandingPage: React.FC = () => {
             planny<span>✳</span>
           </a>
           <nav aria-label="Website" className={menu ? "is-open" : ""}>
-            <a href="#product" onClick={() => setMenu(false)}>
-              Product
-            </a>
             <a href="#how" onClick={() => setMenu(false)}>
               How it works
             </a>
-            <a href="#ai" onClick={() => setMenu(false)}>
-              AI
+            <a href="#product" onClick={() => setMenu(false)}>
+              Features
             </a>
-            <a href="#access" onClick={() => setMenu(false)}>
-              Early access
+            <a href="#ai" onClick={() => setMenu(false)}>
+              Assistant
+            </a>
+            <a href="#faq" onClick={() => setMenu(false)}>
+              FAQ
             </a>
           </nav>
           <div>
@@ -456,7 +460,7 @@ export const LandingPage: React.FC = () => {
               Log in
             </button>
             <button className="lp-primary lp-nav-cta" onClick={go}>
-              Get started <ArrowUpRight size={16} />
+              Try Planny <ArrowUpRight size={16} />
             </button>
             <button
               className="lp-menu"
@@ -468,713 +472,267 @@ export const LandingPage: React.FC = () => {
             </button>
           </div>
         </header>
-        <main>
-          <section className="lp-hero" ref={heroRef}>
+        <main className="lp-clear-main">
+          <section className="lp-hero lp-clear-hero" ref={heroRef}>
             <div className="lp-hero-grid" aria-hidden="true" />
-            <div className="lp-hero-code lp-code-one" aria-hidden="true">
-              01 — CAPTURE
-            </div>
-            <div className="lp-hero-code lp-code-two" aria-hidden="true">
-              02 — PLAN
-            </div>
-            <div className="lp-hero-code lp-code-three" aria-hidden="true">
-              03 — MOVE
-            </div>
             <motion.div
-              className="lp-hero-copy"
+              className="lp-hero-copy lp-clear-copy"
               style={reduceMotion ? undefined : { y: heroCopyY }}
-              initial={reduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
             >
-              <motion.span
-                className="lp-eyebrow"
-                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.08, duration: 0.45 }}
-              >
-                <span className="lp-dot" /> PRODUCTIVITY FOR BEAUTIFULLY MESSY
-                BRAINS
-              </motion.span>
-              <h1 aria-label="Stop keeping your life inside your head.">
-                {["Stop keeping", "your life inside", "your head."].map(
-                  (line, index) => (
-                    <span
-                      className={`lp-title-line ${index === 2 ? "accent" : ""}`}
-                      key={line}
-                      aria-hidden="true"
-                    >
-                      <motion.span
-                        initial={reduceMotion ? false : { y: "112%" }}
-                        animate={{ y: 0 }}
-                        transition={{
-                          delay: 0.14 + index * 0.1,
-                          duration: 0.72,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
-                      >
-                        {line}
-                      </motion.span>
-                    </span>
-                  ),
-                )}
-                <motion.svg
-                  viewBox="0 0 400 22"
-                  aria-hidden="true"
-                  initial={reduceMotion ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.55 }}
-                >
-                  <motion.path
-                    d="M4 16 Q170 1 390 10 M80 21 Q230 6 370 13"
-                    initial={reduceMotion ? false : { pathLength: 0 }}
-                    animate={{ pathLength: 1 }}
-                    transition={{ delay: 0.52, duration: 0.9, ease: "easeOut" }}
-                  />
-                </motion.svg>
+              <span className="lp-eyebrow">
+                <span className="lp-dot" /> YOUR TASKS, TIME AND FOCUS — TOGETHER
+              </span>
+              <h1>
+                Plan your day.
+                <span>Know what to do next.</span>
               </h1>
-              <motion.p
-                initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.48, duration: 0.58 }}
-              >
-                Planny turns your goals, tasks, deadlines and ideas into a
-                simple plan — so you always know what to do next.
-              </motion.p>
-              <motion.button
-                className="lp-hero-cta"
-                onClick={go}
-                initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.72, duration: 0.5 }}
-                whileHover={reduceMotion ? undefined : { scale: 1.035 }}
-                whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-              >
-                <span>Dump the chaos</span>
-                <i><ArrowUpRight size={20} /></i>
-              </motion.button>
-              <motion.div
-                className="lp-hero-note"
-                initial={reduceMotion ? false : { opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.62, duration: 0.5 }}
-              >
-                <span>↳</span> Start with whatever’s on your mind.
-                <br />
-                No account. No perfect plan. Just you.
-              </motion.div>
-              <div className="lp-floating-note">
-                <span>✳</span> Room to think.
-                <br />
-                <strong>Space to do.</strong>
+              <p>
+                Planny puts your tasks, projects and routines in one clear
+                workspace. Add what you need to do, choose what matters, and
+                focus on one step at a time.
+              </p>
+              <div className="lp-clear-actions">
+                <button className="lp-primary" onClick={go}>
+                  Make my first plan <ArrowRight size={18} />
+                </button>
+                <a href="#how">
+                  See how it works <ArrowUpRight size={16} />
+                </a>
+              </div>
+              <div className="lp-clear-proof" aria-label="What Planny helps with">
+                <span><Check size={14} /> See every task clearly</span>
+                <span><Check size={14} /> Plan around your real time</span>
+                <span><Check size={14} /> Stay focused without the clutter</span>
               </div>
             </motion.div>
+
             <motion.div
-              id="try-planny"
-              className="lp-hero-demo-wrap"
-              style={
-                reduceMotion
-                  ? undefined
-                  : { rotateX: demoRotateX, rotateY: demoRotateY, y: heroDemoY }
-              }
-              initial={reduceMotion ? false : { opacity: 0, y: 28, scale: 0.97 }}
+              className="lp-product-preview"
+              style={reduceMotion ? undefined : { rotateX: demoRotateX, rotateY: demoRotateY, y: heroDemoY }}
+              initial={reduceMotion ? false : { opacity: 0, y: 28, scale: .97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ delay: .2, duration: .8, ease: [0.22, 1, 0.36, 1] }}
               onPointerMove={(event) => {
                 if (reduceMotion || event.pointerType === "touch") return;
                 const rect = event.currentTarget.getBoundingClientRect();
-                demoRotateY.set(((event.clientX - rect.left) / rect.width - 0.5) * 4);
-                demoRotateX.set(-((event.clientY - rect.top) / rect.height - 0.5) * 3);
+                demoRotateY.set(((event.clientX - rect.left) / rect.width - .5) * 3);
+                demoRotateX.set(-((event.clientY - rect.top) / rect.height - .5) * 2.5);
               }}
               onPointerLeave={() => {
                 demoRotateX.set(0);
                 demoRotateY.set(0);
               }}
             >
-              <div className="lp-demo-orbit" aria-hidden="true" />
-              <motion.div
-                className="lp-signal lp-signal-one"
-                aria-hidden="true"
-                animate={reduceMotion ? undefined : { y: [0, -10, 0], rotate: [-4, -2, -4] }}
-                transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <span className="lp-signal-icon">✓</span>
-                <span><small>JUST FINISHED</small>Physics revision</span>
-              </motion.div>
-              <motion.div
-                className="lp-signal lp-signal-two"
-                aria-hidden="true"
-                animate={reduceMotion ? undefined : { y: [0, 9, 0], rotate: [5, 3, 5] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: .4 }}
-              >
-                <strong>42</strong><span><small>MINUTES</small>in focus</span>
-              </motion.div>
-              <motion.div
-                className="lp-signal lp-signal-three"
-                aria-hidden="true"
-                animate={reduceMotion ? undefined : { x: [0, 8, 0], y: [0, -5, 0] }}
-                transition={{ duration: 4.6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              >
-                <Sparkles size={15} /> Your next move is ready
-              </motion.div>
-              <PlanDemo onSave={save} />
+              <div className="lp-preview-windowbar">
+                <span><i /><i /><i /></span>
+                <small>YOUR DAY IN PLANNY</small>
+                <b>Today</b>
+              </div>
+              <div className="lp-preview-welcome">
+                <div>
+                  <small>GOOD MORNING</small>
+                  <strong>Here’s your clear plan.</strong>
+                  <p>3 tasks · 2 hours 15 minutes</p>
+                </div>
+                <span>68% ready</span>
+              </div>
+              <div className="lp-preview-layout">
+                <div className="lp-preview-tasks">
+                  <div className="lp-preview-label"><span>Today</span><small>3 TASKS</small></div>
+                  {[
+                    ["Finish the project outline", "Project · 45 min", "NOW"],
+                    ["Revise physics chapter 4", "Study · 60 min", "NEXT"],
+                    ["Go for a short workout", "Routine · 30 min", "6:30 PM"],
+                  ].map(([title, meta, badge], index) => (
+                    <div className="lp-preview-task" key={title}>
+                      <i className={index === 0 ? "active" : ""}>{index === 0 ? "✓" : ""}</i>
+                      <span><strong>{title}</strong><small>{meta}</small></span>
+                      <b>{badge}</b>
+                    </div>
+                  ))}
+                </div>
+                <div className="lp-preview-aside">
+                  <span><Sparkles size={15} /> PLANNY SUGGESTS</span>
+                  <strong>Start with the outline.</strong>
+                  <p>It is due first and fits the time you have now.</p>
+                  <button>Start focus <ArrowRight size={14} /></button>
+                </div>
+              </div>
+              <div className="lp-preview-nav">
+                <span className="active">Today</span><span>Projects</span><span>Focus</span><span>Assistant</span>
+              </div>
             </motion.div>
           </section>
-          <div className="lp-ribbon">
+
+          <div className="lp-ribbon lp-clear-ribbon" aria-label="Planny workflow">
             <div className="lp-ribbon-track">
               {[0, 1].map((copy) => (
                 <div key={copy} aria-hidden={copy === 1}>
-                  <span>LESS OVERTHINKING</span>
-                  <b>✳</b>
-                  <span>MORE DOING</span>
-                  <b>✳</b>
-                  <span>A LITTLE STRUCTURE</span>
-                  <b>✳</b>
-                  <span>A LOT MORE YOU</span>
-                  <b>✳</b>
+                  <span>CAPTURE IT</span><b>→</b><span>PLAN IT</span><b>→</b>
+                  <span>FOCUS</span><b>→</b><span>FINISH</span><b>✳</b>
                 </div>
               ))}
             </div>
           </div>
-          <Reveal id="product" className="lp-section lp-chaos">
-            <div className="lp-section-intro">
-              <span className="lp-eyebrow">01 / CLOSE THE MENTAL TABS</span>
-              <h2>
-                You don’t have a<br />
-                productivity problem.
-                <br />
-                <span>
-                  You have too much
-                  <br />
-                  to think about.
-                </span>
-              </h2>
-              <p>
-                The deadline. The idea at 2 AM. That thing you promised to do.
-                Give it all somewhere to go.
-              </p>
-              <button
-                className="lp-text-button"
-                onClick={() => setOrganized(!organized)}
-              >
-                {organized ? "Scatter it again" : "Make some room"}{" "}
-                <ArrowRight size={18} />
-              </button>
+
+          <Reveal id="how" className="lp-section lp-simple-process">
+            <div className="lp-simple-heading">
+              <span className="lp-eyebrow">HOW PLANNY HELPS</span>
+              <h2>From “I have too much to do” to a clear next step.</h2>
+              <p>You do not need to build a perfect system. Start with what is already in your head.</p>
             </div>
-            <div className={`lp-chaos-board ${organized ? "organized" : ""}`}>
-              <div className="lp-board-label">
-                {organized
-                  ? "YOUR DAY, WITH A LITTLE DIRECTION"
-                  : "SOUND FAMILIAR?"}
-              </div>
+            <div className="lp-process-grid">
               {[
-                "Exam next week",
-                "That big idea…",
-                "Reply to Sam",
-                "Project due Friday",
-                "Move my body",
-                "Where did I save it?",
-              ].map((t, i) => (
-                <motion.div
-                  layout
-                  transition={{ type: "spring", stiffness: 75, damping: 16 }}
-                  className={`lp-chaos-note note-${i}`}
-                  key={t}
-                  style={{ "--tile": colors[i] } as React.CSSProperties}
-                >
-                  <span>
-                    {organized ? (
-                      <Check size={15} />
-                    ) : (
-                      ["↗", "✳", "↳", "!", "♡", "?"][i]
-                    )}
-                  </span>
-                  {t}
-                  {organized && (
-                    <small>
-                      {
-                        ["09:00", "10:00", "11:00", "14:00", "18:00", "Later"][
-                          i
-                        ]
-                      }
-                    </small>
-                  )}
-                </motion.div>
-              ))}
-              <button
-                className="lp-organize"
-                onClick={() => setOrganized(!organized)}
-              >
-                <Sparkles size={17} />
-                {organized ? "Ahh. That’s better." : "Turn chaos into a plan"}
-              </button>
-            </div>
-          </Reveal>
-          <Reveal id="how" className="lp-section lp-transform">
-            <span className="lp-eyebrow">02 / ONE HOME FOR EVERYTHING</span>
-            <h2>Turn chaos into a plan.</h2>
-            <div className="lp-transform-line">
-              <div className="lp-sources">
-                {[
-                  "Notes",
-                  "WhatsApp messages",
-                  "Screenshots",
-                  "Random reminders",
-                  "Mental notes",
-                  "Multiple calendars",
-                ].map((t) => (
-                  <span key={t}>{t}</span>
-                ))}
-              </div>
-              <span className="lp-flow-arrow">⟶</span>
-              <div className="lp-workspace">
-                <img src="/planny-icon.svg" alt="" />
-                <strong>One organized workspace.</strong>
-                <p>Capture → Plan → Focus → Finish</p>
-              </div>
-            </div>
-          </Reveal>
-          <Reveal id="ai" className="lp-section lp-ai">
-            <div>
-              <span className="lp-eyebrow">03 / THINK OUT LOUD</span>
-              <h2>
-                Tell Planny
-                <br />
-                what you want.
-                <br />
-                <span>Find your next move.</span>
-              </h2>
-              <p>
-                Start messy. Get specific. In your workspace, your assistant
-                uses your tasks and remembered preferences to help you plan.
-              </p>
-              <ul>
-                <li>
-                  <Check /> Context that stays with you
-                </li>
-                <li>
-                  <Check /> Small steps for big ideas
-                </li>
-                <li>
-                  <Check /> You confirm every change
-                </li>
-              </ul>
-              <span className="lp-caption">
-                Try the local planning preview →
-              </span>
-            </div>
-            <PlanDemo onSave={save} compact />
-          </Reveal>
-          <Reveal className="lp-section lp-goals">
-            <span className="lp-eyebrow">
-              04 / SMALL STEPS. ACTUAL PROGRESS.
-            </span>
-            <h2>
-              Big goals need
-              <br />
-              <span>small actions.</span>
-            </h2>
-            <div className="lp-goal-title">
-              <span>↗</span>
-              <h3>Build my first real product</h3>
-              <span className="lp-example-tag">EXAMPLE PROJECT</span>
-            </div>
-            <div className="lp-goal-steps">
-              {[
-                "Research",
-                "Design",
-                "Authentication",
-                "Database",
-                "Dashboard",
-                "Testing",
-                "Launch",
-              ].map((s, i) => (
-                <motion.div
-                  key={s}
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.09 }}
-                >
-                  <span style={{ color: colors[i % 6] }}>0{i + 1}</span>
-                  <strong>{s}</strong>
-                  <div>
-                    <i
-                      style={{
-                        width: `${Math.max(12, 100 - i * 17)}%`,
-                        background: colors[i % 6],
-                      }}
-                    />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </Reveal>
-          <Reveal className="lp-section lp-insights">
-            <div className="lp-chart">
-              <div className="lp-chart-top">
-                <span>YOUR WEEK, IN PERSPECTIVE</span>
-                <small>Illustrative preview</small>
-              </div>
-              <div className="lp-chart-number">
-                12<span>h</span> 30<span>m</span>
-                <small>of time made intentional</small>
-              </div>
-              <div className="lp-bars">
-                {[35, 65, 45, 88, 58, 100, 40].map((h, i) => (
-                  <div key={i}>
-                    <motion.i
-                      initial={{ height: 0 }}
-                      whileInView={{ height: `${h}%` }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.8, delay: i * 0.07 }}
-                      style={{ background: colors[i % 6] }}
-                    />
-                    <span>{["M", "T", "W", "T", "F", "S", "S"][i]}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="lp-chart-key">
-                <span>● Study</span>
-                <span>● Projects</span>
-                <span>● Personal</span>
-              </div>
-            </div>
-            <div>
-              <span className="lp-eyebrow">05 / MAKE TIME VISIBLE</span>
-              <h2>
-                Know where
-                <br />
-                your day goes.
-              </h2>
-              <p>
-                Estimate your tasks, make space for focused work, and reflect on
-                what you finished. Progress feels better when you can see it.
-              </p>
-              <div className="lp-reminders">
-                <h3>
-                  Planny remembers.
-                  <br />
-                  You get to breathe.
-                </h3>
-                {[
-                  "Physics revision starts in 15 minutes.",
-                  "Your project deadline is tomorrow.",
-                  "Make a little room for your goal today.",
-                ].map((t, i) => (
-                  <motion.div
-                    key={t}
-                    initial={{ opacity: 0, x: 12 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.15 }}
-                  >
-                    <Bell size={16} />
-                    <span>{t}</span>
-                  </motion.div>
-                ))}
-                <small>
-                  Example reminders · delivery depends on your device settings.
-                </small>
-              </div>
-            </div>
-          </Reveal>
-          <Reveal className="lp-section lp-life">
-            <span className="lp-eyebrow">A LIFE DOESN’T FIT IN ONE LIST</span>
-            <h2>
-              Your tasks. Your goals.
-              <br />
-              Your time. <span>Your life.</span>
-            </h2>
-            <div>
-              {[
-                "Study",
-                "Work",
-                "Health",
-                "Goals",
-                "Projects",
-                "Ideas",
-                "Habits",
-              ].map((t, i) => (
-                <span
-                  key={t}
-                  style={{ "--tile": colors[i % 6] } as React.CSSProperties}
-                >
-                  {["✎", "↗", "♡", "◎", "▧", "✳", "↻"][i]} {t}
-                </span>
-              ))}
-            </div>
-            <p>Different parts of you. One place to bring them together.</p>
-          </Reveal>
-          <Reveal className="lp-section lp-day">
-            <div>
-              <span className="lp-eyebrow">
-                06 / TOMORROW CAN FEEL DIFFERENT
-              </span>
-              <h2>
-                Wake up.
-                <br />
-                Know what’s next.
-                <br />
-                <span>Get on with living.</span>
-              </h2>
-              <p>
-                A little intention. Enough breathing room.
-                <br />A day that feels like yours.
-              </p>
-              <span className="lp-day-sticker">
-                MAKE ROOM
-                <br />
-                FOR REAL LIFE ↗
-              </span>
-            </div>
-            <div className="lp-timeline">
-              <div className="lp-timeline-top">
-                A DAY WITH DIRECTION <span>Sample day</span>
-              </div>
-              {[
-                ["09:00", "Physics revision", "45 min · Deep focus"],
-                ["10:00", "Build something", "Coding · 90 min"],
-                [
-                  "12:30",
-                  "Lunch & a little reset",
-                  "Yes, breaks belong here too",
-                ],
-                [
-                  "15:00",
-                  "Move the project forward",
-                  "One meaningful next step",
-                ],
-                ["18:30", "Move your body", "30 min · Just for you"],
-                ["21:00", "A moment for tomorrow", "Review, then switch off"],
-              ].map(([time, title, desc], i) => (
-                <motion.div
-                  key={time}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.06 }}
-                >
-                  <time>{time}</time>
-                  <i style={{ background: colors[i] }} />
-                  <div>
-                    <strong>{title}</strong>
-                    <p>{desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </Reveal>
-          <Reveal id="features" className="lp-section lp-feature-guide">
-            <span className="lp-eyebrow">GET TO KNOW YOUR WORKSPACE</span>
-            <h2>
-              Everything has a place.
-              <br />
-              <span>Including your next step.</span>
-            </h2>
-            <p>
-              Start with a single task. Add the structure you need as your day,
-              projects, and goals grow.
-            </p>
-            <div className="lp-feature-rows">
-              {[
-                [
-                  "01",
-                  "Today & Upcoming",
-                  "See what needs your attention",
-                  "Today brings current and overdue work together. Upcoming gives you a wider view so you can plan ahead instead of discovering deadlines at the last minute.",
-                  "Try it: capture three things you want to finish today.",
-                ],
-                [
-                  "02",
-                  "Projects & subtasks",
-                  "Make the big thing smaller",
-                  "Group related tasks into a project, break work into smaller steps, and keep deadlines, priorities, and time estimates alongside the work itself.",
-                  "Try it: split an assignment into research, outline, and a first draft.",
-                ],
-                [
-                  "03",
-                  "Assistant",
-                  "A planning partner with context",
-                  "Ask what to work on next, plan around the time you have, or turn an idea into tasks. Your assistant uses your workspace and saved conversation context. Proposed changes wait for your confirmation.",
-                  "Try it: ‘I have 45 minutes. What should I focus on?’",
-                ],
-                [
-                  "04",
-                  "Focus & daily review",
-                  "Give one thing your attention",
-                  "Start a focus session from a task, then review what you finished at the end of the day. Use the result to make your next plan more realistic.",
-                  "Try it: one task, one focused session, then a proper break.",
-                ],
-                [
-                  "05",
-                  "Routines",
-                  "Give repeat work a rhythm",
-                  "Keep recurring habits and regular responsibilities together with your tasks. Build consistency with a routine you can actually fit into your day.",
-                  "Try it: a short evening review or a regular study session.",
-                ],
-                [
-                  "06",
-                  "Brain dump, notes & links",
-                  "Catch the thought before it disappears",
-                  "Brain dump is a place for loose ideas. Notes and links hold the reference material you want to return to, while search helps you find your way back.",
-                  "Try it: save the idea now. Decide what to do with it later.",
-                ],
-              ].map(([n, label, title, description, tip], i) => (
-                <article
-                  key={n}
-                  className="lp-feature-row"
-                  style={{ "--tile": colors[i] } as React.CSSProperties}
-                >
-                  <span className="lp-feature-number">{n}</span>
-                  <div>
-                    <span className="lp-eyebrow">{label}</span>
-                    <h3>{title}</h3>
-                  </div>
-                  <div>
-                    <p>{description}</p>
-                    <small>{tip}</small>
-                  </div>
+                ["01", "Add everything", "Write tasks quickly, save ideas in Brain dump, or group bigger work into projects.", <ListChecks size={25} />],
+                ["02", "Make a realistic plan", "Add time estimates, priorities and deadlines. Planny shows what needs attention first.", <CalendarCheck2 size={25} />],
+                ["03", "Focus and finish", "Start a focus session, mark work done, and see how your time and progress improve.", <TimerReset size={25} />],
+              ].map(([number, title, copy, icon], index) => (
+                <article key={String(number)} style={{ "--tone": colors[index] } as React.CSSProperties}>
+                  <div><span>{number}</span>{icon}</div>
+                  <h3>{title}</h3>
+                  <p>{copy}</p>
                 </article>
               ))}
             </div>
           </Reveal>
-          <Reveal className="lp-section lp-use-cases">
-            <span className="lp-eyebrow">BUILT AROUND YOUR REAL DAY</span>
-            <h2>
-              Different lives.
-              <br />
-              <span>The same need for clarity.</span>
-            </h2>
-            <div className="lp-use-grid">
+
+          <Reveal className="lp-section lp-simple-change">
+            <div className="lp-change-card is-before">
+              <span className="lp-eyebrow">WITHOUT PLANNY</span>
+              <h3>Everything is competing for your attention.</h3>
+              <ul>
+                <li>Tasks in different apps and chats</li>
+                <li>No idea what to start first</li>
+                <li>Plans that ignore how much time you have</li>
+                <li>Unfinished work gets forgotten</li>
+              </ul>
+            </div>
+            <div className="lp-change-arrow" aria-hidden="true">→</div>
+            <div className="lp-change-card is-after">
+              <span className="lp-eyebrow">WITH PLANNY</span>
+              <h3>You open one page and know what matters.</h3>
+              <ul>
+                <li><Check size={16} /> Tasks organized by project</li>
+                <li><Check size={16} /> Priorities, time and deadlines together</li>
+                <li><Check size={16} /> Routines appear every day automatically</li>
+                <li><Check size={16} /> Unfinished tasks carry forward</li>
+              </ul>
+            </div>
+          </Reveal>
+
+          <Reveal id="product" className="lp-section lp-simple-features">
+            <div className="lp-simple-heading">
+              <span className="lp-eyebrow">ONE WORKSPACE, SIX SIMPLE TOOLS</span>
+              <h2>Everything you need to plan, without making planning another job.</h2>
+            </div>
+            <div className="lp-feature-card-grid">
               {[
-                [
-                  "For students",
-                  "More than the next deadline.",
-                  "Bring assignments, exam revision, personal projects, and downtime into the same picture.",
-                  "Revise chapter 4, draft my lab report, and fit in a workout",
-                ],
-                [
-                  "For working professionals",
-                  "Keep the important work visible.",
-                  "Break deliverables into steps, track follow-ups, and protect time for work that needs your full attention.",
-                  "Prepare the client presentation, review the proposal, and reply to feedback",
-                ],
-                [
-                  "For builders & freelancers",
-                  "Move the project forward.",
-                  "Turn a rough idea into a project, collect useful resources, and choose a manageable next action.",
-                  "Research my product idea, sketch the homepage, and test the signup flow",
-                ],
-              ].map(([label, title, description, prompt], i) => (
-                <article
-                  key={label}
-                  style={{ "--tile": colors[i] } as React.CSSProperties}
-                >
-                  <span className="lp-eyebrow">{label}</span>
+                ["Today", "See today’s tasks, grouped by project, with unplanned work kept separate.", <CalendarCheck2 size={23} />],
+                ["Projects", "Break a big outcome into small tasks and track progress in one place.", <FolderKanban size={23} />],
+                ["Routines", "Keep daily habits visible without carrying yesterday’s routine into today.", <Repeat2 size={23} />],
+                ["Focus", "Run a focus timer and understand your progress by day, week, month and year.", <TimerReset size={23} />],
+                ["Brain dump", "Save a thought before it disappears, then decide what to do with it later.", <BrainCircuit size={23} />],
+                ["Assistant", "Ask for the next task, a realistic plan or smaller steps using your workspace context.", <Sparkles size={23} />],
+              ].map(([title, copy, icon], index) => (
+                <article key={String(title)} style={{ "--tone": colors[index] } as React.CSSProperties}>
+                  <span>{icon}</span>
                   <h3>{title}</h3>
-                  <p>{description}</p>
-                  <button
-                    className="lp-text-button"
-                    onClick={() =>
-                      save({
-                        version: 1,
-                        problem: label,
-                        tasks: draftTasks(prompt),
-                      })
-                    }
-                  >
-                    Start with this plan <ArrowUpRight size={16} />
+                  <p>{copy}</p>
+                </article>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal id="ai" className="lp-section lp-simple-ai">
+            <div>
+              <span className="lp-eyebrow">AN ASSISTANT THAT KNOWS YOUR WORKSPACE</span>
+              <h2>Ask a normal question. Get an answer based on your actual tasks.</h2>
+              <p>
+                Planny’s assistant can see your tasks, projects, routines and recent chat context.
+                It suggests useful actions, but you approve every change before it touches your plan.
+              </p>
+              <div className="lp-ai-points">
+                <span><Check size={15} /> “What should I do in the next 45 minutes?”</span>
+                <span><Check size={15} /> “Break my assignment into smaller tasks.”</span>
+                <span><Check size={15} /> “Plan tomorrow around my deadlines.”</span>
+              </div>
+            </div>
+            <div className="lp-chat-preview">
+              <div><img src="/planny-icon.svg" alt="" /><span><strong>Planny Assistant</strong><small>Uses your workspace context</small></span><i /></div>
+              <p className="user">I have one hour. What should I work on?</p>
+              <p className="assistant">
+                Start with <strong>Finish the project outline</strong>. It is due tomorrow and needs 45 minutes.
+                You will still have 15 minutes to review your notes.
+              </p>
+              <div className="lp-chat-action"><span>Suggested action</span><strong>Start 45-minute focus session</strong><button>Review action</button></div>
+            </div>
+          </Reveal>
+
+          <Reveal id="try-planny" className="lp-section lp-simple-demo">
+            <div className="lp-demo-explainer">
+              <span className="lp-eyebrow">TRY IT BEFORE YOU SIGN UP</span>
+              <h2>Turn the tasks in your head into a simple starting plan.</h2>
+              <p>
+                Type one task per line. Planny will separate them, suggest time estimates,
+                and let you edit everything before creating an account.
+              </p>
+              <small>No account required for this preview.</small>
+            </div>
+            <PlanDemo onSave={save} compact />
+          </Reveal>
+
+          <Reveal className="lp-section lp-simple-usecases">
+            <div className="lp-simple-heading">
+              <span className="lp-eyebrow">BUILT FOR REAL DAYS</span>
+              <h2>Useful whether you study, work, build, or do all three.</h2>
+            </div>
+            <div>
+              {[
+                ["Students", "Keep assignments, revision, routines and personal goals in the same plan.", "Revise chapter 4, draft my lab report, and fit in a workout"],
+                ["Professionals", "Turn deliverables and follow-ups into a day you can actually complete.", "Prepare the client presentation, review the proposal, and reply to feedback"],
+                ["Builders", "Move a project forward without losing the ideas, notes and small tasks around it.", "Research my product idea, sketch the homepage, and test the signup flow"],
+              ].map(([title, copy, prompt], index) => (
+                <article key={title} style={{ "--tone": colors[index + 2] } as React.CSSProperties}>
+                  <span>0{index + 1}</span><h3>{title}</h3><p>{copy}</p>
+                  <button onClick={() => save({ version: 1, problem: title, tasks: draftTasks(prompt) })}>
+                    Use this example <ArrowUpRight size={15} />
                   </button>
                 </article>
               ))}
             </div>
           </Reveal>
-          <Reveal id="faq" className="lp-section lp-faq">
+
+          <Reveal id="faq" className="lp-section lp-simple-faq">
             <div>
-              <span className="lp-eyebrow">
-                A FEW THINGS YOU MIGHT BE WONDERING
-              </span>
-              <h2>
-                Less guessing.
-                <br />
-                <span>More getting started.</span>
-              </h2>
+              <span className="lp-eyebrow">QUICK ANSWERS</span>
+              <h2>What you should know before starting.</h2>
             </div>
             <div>
               {[
-                [
-                  "Do I have to sign up to try Planny?",
-                  "No. The planning previews on this page work without an account. Create an account when you want your own workspace. Your edited tasks and time estimates are carried into onboarding on this device, where you review them before saving.",
-                ],
-                [
-                  "Is the homepage demo using AI?",
-                  "The homepage is a local interactive preview: it separates your input into sample tasks and shows suggested estimates. The assistant inside your signed-in workspace uses AI and your workspace context.",
-                ],
-                [
-                  "Can the AI change my tasks by itself?",
-                  "The assistant presents proposed actions for you to review and confirm. You stay in control of whether those changes are applied.",
-                ],
-                [
-                  "Will Planny remember our conversations?",
-                  "The assistant saves conversation history and a compact set of context and preferences for your account. It uses a bounded amount of context for each request, so it may not recall every detail of an old conversation.",
-                ],
-                [
-                  "Can I use it on my laptop and phone?",
-                  "Yes. Open planny.in in your browser and sign in to the same account. Your workspace syncs through your account, so you can return to your tasks from another device.",
-                ],
-                [
-                  "What happens if my connection drops?",
-                  "Task edits are kept on your device while they wait to sync. Reconnect to save pending changes to your account. The cloud AI assistant needs an internet connection.",
-                ],
-                [
-                  "How should I start without overplanning?",
-                  "Add one task you genuinely want to finish, give it a realistic estimate, and start a focus session. Projects, routines, and the assistant are there when you need more structure.",
-                ],
+                ["Is Planny just another to-do list?", "No. Tasks are only the starting point. Planny connects projects, recurring routines, focus sessions, notes and an assistant that uses your workspace context."],
+                ["Can I use it on my phone and laptop?", "Yes. Open planny.in in your browser and sign in with the same account. Your saved workspace follows you between devices."],
+                ["Will unfinished tasks disappear?", "No. Unfinished regular tasks move forward automatically. Routines do not duplicate because each day already has its own routine instance."],
+                ["Can the assistant change my tasks by itself?", "No. It shows a proposed action first. You decide whether to apply it."],
+                ["Do I have to plan everything at once?", "No. Add one task, give it a realistic time estimate, and start there. You can add projects and routines only when you need them."],
               ].map(([question, answer]) => (
                 <details key={question}>
-                  <summary>
-                    {question}
-                    <span aria-hidden="true">+</span>
-                  </summary>
+                  <summary>{question}<span aria-hidden="true">+</span></summary>
                   <p>{answer}</p>
                 </details>
               ))}
             </div>
           </Reveal>
-          <Reveal id="access" className="lp-section lp-access">
-            <span className="lp-eyebrow">EARLY DAYS. BIG POSSIBILITIES.</span>
-            <h2>
-              Help shape a calmer
-              <br />
-              way to get things done.
-            </h2>
-            <p>
-              Planny is growing. Be part of it from the beginning.
-              <br />
-              Built for real days, and the people living them.
-            </p>
-            <button className="lp-text-button" onClick={go}>
-              Try it for yourself <ArrowUpRight size={18} />
-            </button>
-          </Reveal>
-          <Reveal className="lp-section lp-final">
+
+          <Reveal id="access" className="lp-section lp-simple-final">
             <span className="lp-final-spark">✳</span>
-            <h2>
-              Your next productive
-              <br />
-              day starts <span>here.</span>
-            </h2>
-            <p>
-              Stop trying to remember everything.
-              <br />
-              Give your goals a plan.
-            </p>
-            <button className="lp-primary" onClick={go}>
-              Build my first plan <ArrowUpRight size={19} />
-            </button>
-            <a href="#product">Explore Planny</a>
-            <small>Free to try the demo · No signup needed</small>
+            <span className="lp-eyebrow">START SMALL. GET CLEAR.</span>
+            <h2>Your next task should feel obvious.</h2>
+            <p>Add what is on your mind. Planny will help you turn it into a plan you can follow.</p>
+            <button className="lp-primary" onClick={go}>Make my first plan <ArrowRight size={18} /></button>
+            <small>Try the planning preview free · Create an account when you are ready to save</small>
           </Reveal>
         </main>
         <footer className="lp-footer">
@@ -1182,7 +740,7 @@ export const LandingPage: React.FC = () => {
             <img src="/planny-icon.svg" alt="" />
             planny
           </a>
-          <span>A little less chaos. A little more you.</span>
+          <span>One place for your tasks. One clear next step.</span>
           <small>© {new Date().getFullYear()} Planny</small>
         </footer>
         {mode && (
@@ -1207,14 +765,14 @@ export const LandingPage: React.FC = () => {
                 <X />
               </button>
               <img src="/planny-icon.svg" alt="" />
-              <span className="lp-eyebrow">YOUR NEXT CHAPTER</span>
+              <span className="lp-eyebrow">YOUR PLANNY WORKSPACE</span>
               <h2 id="lp-auth-title">
-                {mode === "signup" ? "Make space for you." : "Welcome back."}
+                {mode === "signup" ? "Create your free account." : "Welcome back."}
               </h2>
               <p>
                 {mode === "signup"
-                  ? "Create your account to bring your plan into Planny."
-                  : "Your workspace is right where you left it."}
+                  ? "Save your tasks, projects and routines, then open them from any device."
+                  : "Log in to open your tasks, projects and daily plan."}
               </p>
               <form onSubmit={submit}>
                 {mode === "signup" && (
